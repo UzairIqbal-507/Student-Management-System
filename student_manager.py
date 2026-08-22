@@ -207,20 +207,6 @@ def statistics(students):
     print(f"Lowest cgpa: {lowest_cgpa['CGPA']}"
           f"{lowest_cgpa['name']}")
 
-def sort_by_cgpa(students):
-
-    if not students:
-        print ("\nno Students Available . ")
-        return
-
-    sorted_students = sorted(students , key=lambda student:student['CGPA'],
-    reverse=True)
-
-    print ("=========STUDENTS NY cgpa===========")
-
-    for student in sorted_students:
-        print(f"{student['name']} ->"
-              f"{student['CGPA']} CGPA ")
 
 #UPDATE STUDENTS
 #==================
@@ -246,4 +232,83 @@ def update_students(students):
 
             return
         print(f'\nStudent Not Found!!')
+
+#SORT STUDENTS BY CGPA
+#==========================
+def sort_by_cgpa(students):
+
+    if not students:
+        print ("\nno Students Available . ")
+        return
+
+    sorted_students = sorted(students , key=lambda student:student['CGPA'],
+    reverse=True)
+
+    print ("=========STUDENTS NY cgpa===========")
+
+    for student in sorted_students:
+        print(f"{student['name']} ->"
+              f"{student['CGPA']} CGPA ")
+
+#SORTING BY NAME
+#======================
+def sort_by_name(students):
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    sorted_students = sorted(
+        students,
+        key=lambda student: student["name"].lower()
+    )
+
+    print("\n========= STUDENTS BY NAME =========")
+
+    for student in sorted_students:
+        print(f"{student['name']} -> "
+              f"{student['CGPA']} CGPA")
+
+#SORTING BY SEMESTER
+#========================
+def sort_by_semester(students):
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    sorted_students = sorted(
+        students,
+        key=lambda student: student["semester"]
+    )
+
+    print("\n========= STUDENTS BY SEMESTER =========")
+
+    for student in sorted_students:
+        print(f"{student['name']} -> "
+              f"Semester {student['semester']}")
+
+#SORTING STUDENTS
+#=====================
+def sort_students(students):
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    print("\n========== SORT STUDENTS ==========")
+    print("1. Sort by CGPA")
+    print("2. Sort by Name")
+    print("3. Sort by Semester")
+
+    choice = input("Enter your choice: ").strip()
+
+    if choice == "1":
+        sort_by_cgpa(students)
+
+    elif choice == "2":
+        sort_by_name(students)
+
+    elif choice == "3":
+        sort_by_semester(students)
+
+    else:
+        print("\nInvalid sorting choice! ❌")
 

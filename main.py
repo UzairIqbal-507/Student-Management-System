@@ -8,7 +8,8 @@ from student_manager import (
     update_students,
     delete_students,
     statistics,
-    sort_by_cgpa
+    sort_by_cgpa,
+    sort_students
 )
 
 
@@ -27,7 +28,7 @@ def main ():
         print("4. Delete students")
         print("5. Update students")
         print("6. Statistics")
-        print("7. Sort by cgpa")
+        print("7. Sort students")
         print("8. Exit")
 
 
@@ -51,7 +52,7 @@ def main ():
             statistics(students)
 
         elif choice == 7:
-            sort_by_cgpa(students)
+            sort_students(students)
 
         elif choice == 8:
             print ("GOODBYE !!")
