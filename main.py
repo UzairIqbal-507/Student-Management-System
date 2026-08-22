@@ -30,7 +30,7 @@ def get_non_empty_input(message):
 
         print("IT CAN'T BE EMPTY !!!!🤞")
 
-#GET STUDENTS CGPA
+#GET STUDENTS cgpa
 #====================
 def get_cgpa():
     while True:
@@ -40,7 +40,7 @@ def get_cgpa():
             if 0<=cgpa<=4.00 :
                 return cgpa
 
-            print ("CGPA MUST BE IN RANGE !!🙄")
+            print ("cgpa MUST BE IN RANGE !!🙄")
 
         except ValueError:
             print ("Please ENTER A VALID NUMBER........😵")
@@ -103,6 +103,8 @@ def add_students():
             return
 
     name = get_non_empty_input("Please enter student name: ")
+    email= get_non_empty_input("Please enter student email: ")
+    phone = get_non_empty_input("Please enter student phone number: ")
 
     department = get_department()
 
@@ -112,6 +114,8 @@ def add_students():
     student={
         "student_id":student_id,
         "name":name,
+        "email":email,
+        "phone":phone,
         "department":department,
         "semester":semester,
         "CGPA":cgpa
@@ -135,7 +139,7 @@ def view_students():
         print(f'name: {student["name"]}')
         print(f'department: {student["department"]}')
         print(f'semester: {student["semester"]}')
-        print(f'CGPA: {student["CGPA"]}')
+        print(f'cgpa: {student["CGPA"]}')
         print(f'---------------------------------------')
 
 #SEARCH STUDENTS
@@ -235,6 +239,8 @@ def display_student(student):
 
     print(f"ID: {student['student_id']}")
     print(f"Name: {student['name']}")
+    print(f"Email: {student['email']}")
+    print(f"Phone: {student['phone']}")
     print(f"Department: {student['department']}")
     print(f"Semester: {student['semester']}")
     print(f"CGPA: {student['CGPA']}")
@@ -318,6 +324,8 @@ def update_students():
 
             student["name"] = get_non_empty_input("Enter new name: ")
             student["department"] = get_non_empty_input("Enter new department: ")
+            student["email"] = get_non_empty_input("Enter new email: ")
+            student["phone"] = get_non_empty_input("Enter new phone: ")
             student["semester"] = get_semester()
             student["CGPA"] = get_cgpa()
 
