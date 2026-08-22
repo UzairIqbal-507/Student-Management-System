@@ -1,4 +1,5 @@
 from utils import load_students
+from validation import get_menu_choice
 
 from student_manager import (
     add_students,
@@ -30,7 +31,7 @@ def main ():
         print("8. Exit")
 
 
-        choice = int(input("Enter your choice: "))
+        choice = get_menu_choice()
         if choice == 1:
             add_students(students)
 

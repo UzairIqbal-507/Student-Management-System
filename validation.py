@@ -90,3 +90,14 @@ def get_phone():
             return phone
 
         print("Phone must contain exactly 11 digits.")
+
+def get_menu_choice():
+    while True:
+        try:
+            choice=int(input("Enter your choice (1-8): "))
+            if 1<=choice<=8:
+                return choice
+            print ("Choice MUST BE IN RANGE !!!")
+
+        except ValueError:
+            print("PLEASE ENTER A VALID NUMBER !!!")
