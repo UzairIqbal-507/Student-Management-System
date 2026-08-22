@@ -1,6 +1,6 @@
 from validation import (get_non_empty_input, get_semester,
                         get_department, get_cgpa,
-                        get_email, get_phone, get_name, get_student_id)
+                        get_email, get_phone, get_name, get_student_id, get_search_choice)
 
 from utils import save_students
 
@@ -72,25 +72,25 @@ def search_students(students):
 
     print("1. SEARCH BY ID.... ")
     print("2. SEARCH BY NAME... ")
-    print ("3. SEARCH BY DEPARTMENT... ")
+    print("3. SEARCH BY DEPARTMENT... ")
     print("4. SEARCH BY SEMESTER... ")
+    print("5. SEARCH BY CGPA... ")
 
-    choice = input ("enter choice : ")
+    choice = get_search_choice()
 
     if choice == "1":
 
-        student_id = input ("Enter student id ").strip()
+        student_id = get_student_id()
 
         for student in students:
             if student["student_id"] == student_id:
-
                 display_student(student)
                 return
 
         print("\nStudent not found❌")
 
     elif choice == "2":
-        name = input ("Enter student name ").strip().lower()
+        name = get_name().lower()
         found = False
         for student in students:
             if student["name"].lower() == name:
@@ -128,6 +128,17 @@ def search_students(students):
                 found=True
         if not found:
                 print ("STUDENT NOT FOUND IN CURRENT SEMESTER..!!❌")
+
+    elif choice == "5":
+        print("\nSelect CGPA:")
+        cgpa = get_cgpa()
+        found= False
+        for student in students:
+            if student["CGPA"] == cgpa:
+                display_student(student)
+                found=True
+        if not found :
+            print ("\nNo Student Found with this CGPA..❌")
 
     else:
         print("\ninvalid Search Choice!!❌")

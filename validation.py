@@ -110,4 +110,13 @@ def get_student_id():
         if student_id:
             return student_id
 
-        print ("Student id cannot be Empty")
+        print ("Student id cannot be Empty!!❌")
+
+def get_search_choice():
+    while True:
+        choice = input("Enter choice (1-5): ").strip()
+
+        if choice in ("1", "2", "3", "4","5"):
+            return choice
+
+        print("Invalid choice! Please select 1-5.")
