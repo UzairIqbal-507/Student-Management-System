@@ -101,3 +101,13 @@ def get_menu_choice():
 
         except ValueError:
             print("PLEASE ENTER A VALID NUMBER !!!")
+
+def get_student_id():
+    while True:
+
+        student_id = input("Please enter your student ID: ").strip()
+
+        if student_id:
+            return student_id
+
+        print ("Student id cannot be Empty")

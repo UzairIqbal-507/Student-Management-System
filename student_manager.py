@@ -1,6 +1,6 @@
 from validation import (get_non_empty_input, get_semester,
                         get_department, get_cgpa,
-                        get_email, get_phone, get_name)
+                        get_email, get_phone, get_name, get_student_id)
 
 from utils import save_students
 
@@ -10,7 +10,7 @@ def add_students(students):
 
     print ("\n=====Add students======")
 
-    student_id = get_non_empty_input("Enter student id : ")
+    student_id = get_student_id()
 
     #Check duplicate ID in it
     for student in students:
@@ -214,7 +214,7 @@ def sort_by_cgpa(students):
 #UPDATE STUDENTS
 #==================
 def update_students(students):
-    student_id = get_non_empty_input("Enter student id: ")
+    student_id = get_student_id()
     for student in students:
 
         if student["student_id"] == student_id:
