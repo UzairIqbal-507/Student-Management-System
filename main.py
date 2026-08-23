@@ -8,7 +8,6 @@ from student_manager import (
     update_students,
     delete_students,
     statistics,
-    sort_by_cgpa,
     sort_students
 )
 

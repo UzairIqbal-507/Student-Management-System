@@ -1,6 +1,8 @@
 from validation import (get_non_empty_input, get_semester,
                         get_department, get_cgpa,
-                        get_email, get_phone, get_name, get_student_id, get_search_choice)
+                        get_email, get_phone, get_name,
+                        get_student_id, get_search_choice,
+                        get_marks, calculate_result)
 
 from utils import save_students
 
@@ -26,6 +28,8 @@ def add_students(students):
 
     semester = get_semester()
     cgpa = get_cgpa()
+    marks=get_subject_marks()
+    total_marks,maximum_marks,percentage,grade = calculate_result(marks)
 
     student={
         "student_id":student_id,
@@ -33,8 +37,13 @@ def add_students(students):
         "email":email,
         "phone":phone,
         "department":department,
-        "semester":semester,
-        "CGPA":cgpa
+        "semester": semester,
+        "CGPA": cgpa,
+        "marks": marks,
+        "total_marks": total_marks,
+        "maximum_marks": maximum_marks,
+        "percentage": percentage,
+        "grade": grade
     }
     students.append(student)
 
@@ -58,7 +67,23 @@ def view_students(students):
         print(f'department: {student["department"]}')
         print(f'semester: {student["semester"]}')
         print(f'cgpa: {student["CGPA"]}')
-        print(f'---------------------------------------')
+        print(f'cgpa: {student["CGPA"]}')
+
+        if "marks" in student:
+            print("----- Academic Result -----")
+
+            for subject, marks in student["marks"].items():
+                print(f'{subject}: {marks}')
+
+            print(f'Total Marks: {student["total_marks"]}/{student["maximum_marks"]}')
+            print(f'Percentage: {student["percentage"]:.2f}%')
+            print(f'Grade: {student["grade"]}')
+
+        else:
+            print("Academic Result: Not Available...❌")
+
+        print(f'--------------------------------------------')
+
 
 #SEARCH STUDENTS
 #====================
@@ -157,6 +182,19 @@ def display_student(student):
     print(f"Semester: {student['semester']}")
     print(f"CGPA: {student['CGPA']}")
 
+    if "marks" in student:
+        print("\n----- Academic Result -----")
+
+        for subject, marks in student["marks"].items():
+            print(f"{subject}: {marks}")
+
+        print(f"Total Marks: {student['total_marks']}/{student['maximum_marks']}")
+        print(f"Percentage: {student['percentage']:.2f}%")
+        print(f"Grade: {student['grade']}")
+
+    else:
+        print("Academic Result: Not Available....❌3")
+
 
 
 #DELETE STUDENTS
@@ -198,14 +236,43 @@ def statistics(students):
 
     lowest_cgpa = min(students,key=lambda student: student["CGPA"])
 
+    students_with_results = [
+        student for student in students
+        if "percentage" in student and "grade" in student
+    ]
+
+    if students_with_results:
+        total_percentage = sum(
+            student["percentage"] for student in students_with_results
+        )
+
+        average_percentage = total_percentage / len(students_with_results)
+
+        grade_counts = {}
+
+        for student in students_with_results:
+            grade = student["grade"]
+            grade_counts[grade] = grade_counts.get(grade, 0) + 1
+
     print ("\n=============STATISTICS=============")
     print(f"Total Students: {total_students}")
     print(f"Total cgpa: {total_cgpa}")
     print(f"Average cgpa: {average_cgpa}")
-    print(f"Highest cgpa: {highest_cgpa['CGPA']}"
+    print(f"Highest cgpa: {highest_cgpa['CGPA']}   "
           f"{highest_cgpa['name']}")
-    print(f"Lowest cgpa: {lowest_cgpa['CGPA']}"
+    print(f"Lowest cgpa: {lowest_cgpa['CGPA']}   "
           f"{lowest_cgpa['name']}")
+
+    if students_with_results:
+        print(f"Average Percentage: {average_percentage:.2f}%")
+
+        print("Grade Distribution:")
+
+        for grade, count in sorted(grade_counts.items()):
+            print(f"{grade}: {count} student(s)")
+    else:
+        print("Average Percentage: Not Available")
+        print("Grade Distribution: Not Available")
 
 
 #UPDATE STUDENTS
@@ -225,6 +292,14 @@ def update_students(students):
             student["phone"] = get_phone()
             student["semester"] = get_semester()
             student["CGPA"] = get_cgpa()
+            marks = get_subject_marks()
+            total_marks, maximum_marks, percentage, grade = calculate_result(marks)
+
+            student["marks"] = marks
+            student["total_marks"] = total_marks
+            student["maximum_marks"] = maximum_marks
+            student["percentage"] = percentage
+            student["grade"] = grade
 
             save_students(students)
 
@@ -286,6 +361,35 @@ def sort_by_semester(students):
         print(f"{student['name']} -> "
               f"Semester {student['semester']}")
 
+
+def sort_by_percentage(students):
+    students_with_results = [
+        student for student in students
+        if "percentage" in student
+    ]
+
+    if not students_with_results:
+        print("\nNo Student Results Available.")
+        return
+
+    sorted_students = sorted(
+        students_with_results,
+        key=lambda student: student["percentage"],
+        reverse=True
+    )
+
+    print("\n========= STUDENTS BY PERCENTAGE =========")
+
+    for student in sorted_students:
+        print(
+            f"{student['name']} -> "
+            f"{student['percentage']:.2f}% "
+            f"({student['grade']})"
+        )
+
+
+
+
 #SORTING STUDENTS
 #=====================
 def sort_students(students):
@@ -297,6 +401,7 @@ def sort_students(students):
     print("1. Sort by CGPA")
     print("2. Sort by Name")
     print("3. Sort by Semester")
+    print("4. Sort by Percentage")
 
     choice = input("Enter your choice: ").strip()
 
@@ -309,6 +414,26 @@ def sort_students(students):
     elif choice == "3":
         sort_by_semester(students)
 
+    elif choice == "4":
+        sort_by_percentage(students)
+
     else:
         print("\nInvalid sorting choice! ❌")
+
+
+#GET MARKS FOR SUBJECT
+#========================
+def get_subject_marks():
+    subjects=[
+        "Python",
+        "DBMS",
+        "Statistics",
+        "Mathematics",
+        "Calculus",
+        "DLD"
+    ]
+    marks={}
+    for subject in subjects:
+        marks[subject]=get_marks(subject)
+    return marks
 
