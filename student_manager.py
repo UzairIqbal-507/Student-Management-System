@@ -21,8 +21,19 @@ def add_students(students):
             return
 
     name = get_name()
-    email= get_email()
+    email = get_email()
+
+    # Check duplicate email and phone
+    for student in students:
+        if student["email"].lower() == email.lower():
+            print("EMAIL ALREADY EXISTS !!...❌")
+            return
+
     phone = get_phone()
+    for student in students:
+        if student["phone"] == phone:
+            print("PHONE NUMBER ALREADY EXISTS !!...❌")
+            return
 
     department = get_department()
 
@@ -288,8 +299,27 @@ def update_students(students):
 
             student["name"] = get_name()
             student["department"] = get_department()
-            student["email"] = get_email()
-            student["phone"] = get_phone()
+
+            email = get_email()
+
+            for other_student in students:
+                if other_student is not student:
+                    if other_student["email"].lower() == email.lower():
+                        print("EMAIL ALREADY EXISTS !!...❌")
+                        return
+
+            student["email"] = email
+
+            phone = get_phone()
+
+            for other_student in students:
+                if other_student is not student:
+                    if other_student["phone"] == phone:
+                        print("PHONE NUMBER ALREADY EXISTS !!...❌")
+                        return
+
+            student["phone"] = phone
+
             student["semester"] = get_semester()
             student["CGPA"] = get_cgpa()
             marks = get_subject_marks()
@@ -306,7 +336,8 @@ def update_students(students):
             print ("STUDENT UPDATED SUCCESSFULLY !!")
 
             return
-        print(f'\nStudent Not Found!!')
+
+    print(f'\nStudent Not Found!!')
 
 #SORT STUDENTS BY CGPA
 #==========================
@@ -386,8 +417,6 @@ def sort_by_percentage(students):
             f"{student['percentage']:.2f}% "
             f"({student['grade']})"
         )
-
-
 
 
 #SORTING STUDENTS

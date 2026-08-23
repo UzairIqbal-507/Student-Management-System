@@ -11,8 +11,6 @@ from student_manager import (
     sort_students
 )
 
-
-
 #LOAD EXISTING STUDENTS WHEN PROGRAM STARTS
 students = load_students()
 
