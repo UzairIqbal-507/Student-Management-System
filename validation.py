@@ -101,6 +101,8 @@ def get_cgpa():
         except ValueError:
             print ("Please ENTER A VALID NUMBER........😵")
 
+#GET MARKS
+#================
 def get_marks(subject):
     while True:
         try:
@@ -111,6 +113,8 @@ def get_marks(subject):
         except ValueError:
             print ("PLEASE ENTER A VALID NUMBER !!!😵")
 
+#CALCULATING RESULT
+#========================
 def calculate_result(marks):
     total_marks = sum(marks.values())
     maximum_marks = len(marks) * 100
@@ -119,6 +123,8 @@ def calculate_result(marks):
 
     return total_marks, maximum_marks, percentage, grade
 
+#GET GRADE FOR PERCENTAGE
+#==============================
 def get_grade(percentage):
     if percentage >=90:
         return "A+"
@@ -190,6 +196,8 @@ def get_percentage_range():
         except ValueError:
             print("PLEASE ENTER VALID NUMBERS !!!😵")
 
+#GET SEMESTER RANGE
+#======================
 def get_semester_range():
     while True:
         try:
@@ -205,6 +213,8 @@ def get_semester_range():
         except ValueError:
             print ("PLEASE ENTER A VALID NUMBER !!😵")
 
+#CGPA RANGE
+#===============
 def get_cgpa_range():
     while True:
         try:
@@ -222,3 +232,17 @@ def get_cgpa_range():
 
         except ValueError:
             print("PLEASE ENTER VALID NUMBERS !!!😵")
+
+#SORT ORDER
+#==================
+def get_sort_order():
+    while True:
+        print("\n1. Highest to Lowest")
+        print("2. Lowest to Highest")
+
+        choice = input("Enter sorting order: ").strip()
+
+        if choice in ["1", "2"]:
+            return choice
+
+        print("Invalid sorting order! ❌")

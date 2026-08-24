@@ -4,7 +4,7 @@ from validation import (get_non_empty_input, get_semester,
                         get_student_id, get_search_choice,
                         get_marks, calculate_result,
                         get_percentage_range,get_semester_range,
-                        get_cgpa_range)
+                        get_cgpa_range,get_sort_order)
 
 from utils import save_students
 
@@ -378,31 +378,45 @@ def update_students(students):
 
 #SORT STUDENTS BY CGPA
 #==========================
-def sort_by_cgpa(students):
+def sort_by_cgpa(students, order):
 
-    if not students:
-        print ("\nno Students Available . ")
-        return
-
-    sorted_students = sorted(students , key=lambda student:student['CGPA'],
-    reverse=True)
-
-    print ("=========STUDENTS NY cgpa===========")
-
-    for student in sorted_students:
-        print(f"{student['name']} ->"
-              f"{student['CGPA']} CGPA ")
-
-#SORTING BY NAME
-#======================
-def sort_by_name(students):
     if not students:
         print("\nNo Students Available.")
         return
 
+    if order == "1":
+        reverse = True
+    else:
+        reverse = False
+
     sorted_students = sorted(
         students,
-        key=lambda student: student["name"].lower()
+        key=lambda student: student["CGPA"],
+        reverse=reverse
+    )
+
+    print("\n========= STUDENTS BY CGPA =========")
+
+    for student in sorted_students:
+        print(f"{student['name']} -> "
+              f"{student['CGPA']} CGPA")
+
+#SORTING BY NAME
+#======================
+def sort_by_name(students, order):
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    if order == "1":
+        reverse = False
+    else:
+        reverse = True
+
+    sorted_students = sorted(
+        students,
+        key=lambda student: student["name"].lower(),
+        reverse=reverse
     )
 
     print("\n========= STUDENTS BY NAME =========")
@@ -413,14 +427,20 @@ def sort_by_name(students):
 
 #SORTING BY SEMESTER
 #========================
-def sort_by_semester(students):
+def sort_by_semester(students, order):
     if not students:
         print("\nNo Students Available.")
         return
 
+    if order == "1":
+        reverse = True
+    else:
+        reverse = False
+
     sorted_students = sorted(
         students,
-        key=lambda student: student["semester"]
+        key=lambda student: student["semester"],
+        reverse=reverse
     )
 
     print("\n========= STUDENTS BY SEMESTER =========")
@@ -429,8 +449,9 @@ def sort_by_semester(students):
         print(f"{student['name']} -> "
               f"Semester {student['semester']}")
 
-
-def sort_by_percentage(students):
+#SORTING BY PERCENTAGE
+#=============================
+def sort_by_percentage(students, order):
     students_with_results = [
         student for student in students
         if "percentage" in student
@@ -440,10 +461,15 @@ def sort_by_percentage(students):
         print("\nNo Student Results Available.")
         return
 
+    if order == "1":
+        reverse = True
+    else:
+        reverse = False
+
     sorted_students = sorted(
         students_with_results,
         key=lambda student: student["percentage"],
-        reverse=True
+        reverse=reverse
     )
 
     print("\n========= STUDENTS BY PERCENTAGE =========")
@@ -471,17 +497,20 @@ def sort_students(students):
 
     choice = input("Enter your choice: ").strip()
 
-    if choice == "1":
-        sort_by_cgpa(students)
+    if choice in ["1", "2", "3", "4"]:
+        order = get_sort_order()
 
-    elif choice == "2":
-        sort_by_name(students)
+        if choice == "1":
+            sort_by_cgpa(students, order)
 
-    elif choice == "3":
-        sort_by_semester(students)
+        elif choice == "2":
+            sort_by_name(students, order)
 
-    elif choice == "4":
-        sort_by_percentage(students)
+        elif choice == "3":
+            sort_by_semester(students, order)
+
+        elif choice == "4":
+            sort_by_percentage(students, order)
 
     else:
         print("\nInvalid sorting choice! ❌")
