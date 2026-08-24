@@ -132,28 +132,24 @@ def search_students(students):
     elif choice == "2":
         name = input("Enter student name: ").strip().lower()
 
-        found = False
+        matching_students =[]
 
         for student in students:
             if name in student["name"].lower():
-                display_student(student)
-                found = True
+                matching_students.append(student)
 
-        if not found:
-            print("\nSTUDENT NOT FOUND!!!")
+        display_students_list(matching_students)
 
     elif choice == "3":
         department = get_department()
 
-        found = False
+        matching_students = []
 
         for student in students:
             if student["department"] == department:
-                display_student(student)
-                found = True
+                matching_students.append(student)
 
-        if not found:
-            print("\nNo students found in this department. ❌")
+        display_students_list(matching_students)
 
 
 
@@ -161,56 +157,49 @@ def search_students(students):
         print("\nSelect Semester:")
         semester = get_semester()
 
-        found=False
+        matching_students = []
 
         for student in students:
             if student["semester"] == semester:
-                display_student(student)
-                found=True
-        if not found:
-                print ("STUDENT NOT FOUND IN CURRENT SEMESTER..!!❌")
+                matching_students.append(student)
+
+        display_students_list(matching_students)
 
     elif choice == "5":
         print("\nSelect CGPA Range:")
 
         minimum, maximum = get_cgpa_range()
 
-        found = False
+        matching_students = []
 
         for student in students:
             if minimum <= student["CGPA"] <= maximum:
-                display_student(student)
-                found = True
+                matching_students.append(student)
 
-        if not found:
-            print("\nNo Student Found in this CGPA Range..❌")
+        display_students_list(matching_students)
 
     elif choice == "6":
         minimum, maximum = get_percentage_range()
 
-        found = False
+        matching_students = []
 
         for student in students:
             if "percentage" in student:
                 if minimum <= student["percentage"] <= maximum:
-                    display_student(student)
-                    found = True
+                    matching_students.append(student)
 
-        if not found:
-            print("\nNo Student Found in this Percentage Range..❌")
+        display_students_list(matching_students)
 
     elif choice == "7":
         minimum, maximum = get_semester_range()
 
-        found = False
+        matching_students = []
 
         for student in students:
             if minimum <= student["semester"] <= maximum:
-                display_student(student)
-                found = True
+                matching_students.append(student)
 
-        if not found:
-            print("\nNo Student Found in this Semester Range..❌")
+        display_students_list(matching_students)
 
     else:
         print("\ninvalid Search Choice!!❌")
@@ -241,6 +230,18 @@ def display_student(student):
 
     else:
         print("Academic Result: Not Available....❌3")
+
+#DISPLAY STUDENTS LIST
+#===========================
+def display_students_list(students):
+    if not students:
+        print("\nSTUDENT NOT FOUND!!!❌")
+        return
+
+    for student in students:
+        display_student(student)
+
+    print(f"\nTotal Students Found: {len(students)}")
 
 
 
