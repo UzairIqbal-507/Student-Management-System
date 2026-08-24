@@ -269,25 +269,51 @@ def delete_students(students):
 
 #STATISTICS
 #===============
+# STATISTICS
+# ===============
 def statistics(students):
     if not students:
-        print ("\nno Students Available . ")
+        print("\nNo Students Available.")
         return
 
-    total_students= len(students)
+    total_students = len(students)
 
     total_cgpa = sum(student["CGPA"] for student in students)
 
     average_cgpa = total_cgpa / total_students
 
-    highest_cgpa = max(students,key=lambda student: student["CGPA"])
+    highest_cgpa = max(students, key=lambda student: student["CGPA"])
 
-    lowest_cgpa = min(students,key=lambda student: student["CGPA"])
+    lowest_cgpa = min(students, key=lambda student: student["CGPA"])
+
+    # DEPARTMENT DISTRIBUTION
+    department_counts = {}
+
+    for student in students:
+        department = student["department"]
+        department_counts[department] = department_counts.get(department, 0) + 1
+
+    # DEPARTMENT CGPA TOTAL
+    department_cgpa = {}
+
+    for student in students:
+        department = student["department"]
+        department_cgpa[department] = (
+                department_cgpa.get(department, 0) + student["CGPA"]
+        )
+
+    # SEMESTER DISTRIBUTION
+    semester_counts = {}
+
+    for student in students:
+        semester = student["semester"]
+        semester_counts[semester] = semester_counts.get(semester, 0) + 1
 
     students_with_results = [
         student for student in students
         if "percentage" in student and "grade" in student
     ]
+    students_without_results = total_students - len(students_with_results)
 
     if students_with_results:
         total_percentage = sum(
@@ -302,24 +328,48 @@ def statistics(students):
             grade = student["grade"]
             grade_counts[grade] = grade_counts.get(grade, 0) + 1
 
-    print ("\n=============STATISTICS=============")
+    print("\n============= STATISTICS =============")
     print(f"Total Students: {total_students}")
-    print(f"Total cgpa: {total_cgpa}")
-    print(f"Average cgpa: {average_cgpa}")
-    print(f"Highest cgpa: {highest_cgpa['CGPA']}   "
+    print(f"Total CGPA: {total_cgpa}")
+    print(f"Average CGPA: {average_cgpa:.2f}")
+
+    print(f"Highest CGPA: {highest_cgpa['CGPA']}   "
           f"{highest_cgpa['name']}")
-    print(f"Lowest cgpa: {lowest_cgpa['CGPA']}   "
+
+    print(f"Lowest CGPA: {lowest_cgpa['CGPA']}   "
           f"{lowest_cgpa['name']}")
 
-    if students_with_results:
-        print(f"Average Percentage: {average_percentage:.2f}%")
+    print("\n-----------Department Distribution-----------:")
 
-        print("Grade Distribution:")
+    for department, count in sorted(department_counts.items()):
+        print(f"{department}: {count} student(s)")
+
+    print("\n-----------Department Performance---------:")
+
+    for department, count in sorted(department_counts.items()):
+        average_department_cgpa = department_cgpa[department] / count
+
+        print(f"{department}: "
+              f"{average_department_cgpa:.2f} average CGPA")
+
+    print("\n--------Semester Distribution---------:")
+    for semester, count in sorted(semester_counts.items()):
+        print(f"Semester {semester}: {count} student(s)")
+
+    print("\n---------Academic Result Availability--------:")
+    print(f"Students with results: {len(students_with_results)}")
+    print(f"Students without results: {students_without_results}")
+
+    if students_with_results:
+        print(f"\nAverage Percentage: {average_percentage:.2f}%")
+
+        print("-------Grade Distribution-------:")
 
         for grade, count in sorted(grade_counts.items()):
             print(f"{grade}: {count} student(s)")
+
     else:
-        print("Average Percentage: Not Available")
+        print("\nAverage Percentage: Not Available")
         print("Grade Distribution: Not Available")
 
 
