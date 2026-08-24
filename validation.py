@@ -163,9 +163,62 @@ def get_student_id():
 #=========================
 def get_search_choice():
     while True:
-        choice = input("Enter choice (1-5): ").strip()
+        choice = input("Enter choice (1-6): ").strip()
 
-        if choice in ("1", "2", "3", "4","5"):
+        if choice in ("1", "2", "3", "4","5","6","7"):
             return choice
 
-        print("Invalid choice! Please select 1-5.")
+        print("Invalid choice! Please select 1-7.")
+
+#GET PERCENTAGE IN SEARCH
+#============================
+def get_percentage_range():
+    while True:
+        try:
+            minimum = float(input("Enter minimum percentage: "))
+            maximum = float(input("Enter maximum percentage: "))
+
+            if 0 <= minimum <= 100 and 0 <= maximum <= 100:
+                if minimum <= maximum:
+                    return minimum, maximum
+
+                print("Minimum percentage cannot be greater than maximum. ❌")
+
+            else:
+                print("Percentage must be between 0 and 100. ❌")
+
+        except ValueError:
+            print("PLEASE ENTER VALID NUMBERS !!!😵")
+
+def get_semester_range():
+    while True:
+        try:
+            minimum = int(input("Enter minimum semester: "))
+            maximum = int(input("Enter maximum semester: "))
+            if 1 <= minimum <= 8 and 1 <= maximum <= 8:
+                if minimum <= maximum:
+                    return minimum, maximum
+                print("Minimum semester cannot be greater than maximum...❌")
+            else:
+                print ("Semester must be between 1 and 8..🤞")
+
+        except ValueError:
+            print ("PLEASE ENTER A VALID NUMBER !!😵")
+
+def get_cgpa_range():
+    while True:
+        try:
+            minimum = float(input("Enter minimum CGPA: "))
+            maximum = float(input("Enter maximum CGPA: "))
+
+            if 0 <= minimum <= 4 and 0 <= maximum <= 4:
+                if minimum <= maximum:
+                    return minimum, maximum
+
+                print("Minimum CGPA cannot be greater than maximum. ❌")
+
+            else:
+                print("CGPA must be between 0 and 4. ❌")
+
+        except ValueError:
+            print("PLEASE ENTER VALID NUMBERS !!!😵")
