@@ -46,3 +46,39 @@ def backup_students():
     except FileNotFoundError:
         print("\nNo student data available for backup. ❌")
 
+# GET AVAILABLE BACKUPS
+# =========================
+def get_backups():
+    if not os.path.exists("backups"):
+        return []
+
+    backups = []
+
+    for file in os.listdir("backups"):
+        if file.startswith("students_backup_") and file.endswith(".json"):
+            backups.append(file)
+
+    return sorted(backups)
+
+# RESTORE STUDENTS DATA
+# =========================
+def restore_students(backup_file):
+    try:
+        backup_path = os.path.join("backups", backup_file)
+        if os.path.exists("students.json"):
+            backup_students()
+        with open(backup_path) as backup:
+            students = json.load(backup)
+
+        if not isinstance(students, list):
+            print("\nInvalid backup data. ❌")
+            return
+
+        with open("students.json", "w") as json_file:
+            json.dump(students, json_file, indent=4)
+
+        print("\nStudent data restored successfully. ✅")
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("\nUnable to restore this backup. ❌")
+

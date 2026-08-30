@@ -145,8 +145,8 @@ def get_grade(percentage):
 def get_menu_choice():
     while True:
         try:
-            choice=int(input("Enter your choice (1-8): "))
-            if 1<=choice<=8:
+            choice=int(input("Enter your choice (1-9): "))
+            if 1<=choice<=9:
                 return choice
             print ("Choice MUST BE IN RANGE !!!")
 
@@ -246,3 +246,18 @@ def get_sort_order():
             return choice
 
         print("Invalid sorting order! ❌")
+
+#GET BACKUP CHOICE
+#=====================
+def get_backup_choice(backups):
+    while True:
+        try:
+            choice = int(input("Enter backup number to restore: "))
+
+            if 1 <= choice <= len(backups):
+                return choice - 1
+
+            print("Invalid backup choice! ❌")
+
+        except ValueError:
+            print("PLEASE ENTER A VALID NUMBER! ❌")

@@ -8,7 +8,7 @@ from student_manager import (
     update_students,
     delete_students,
     statistics,
-    sort_students
+    sort_students,restore_student_data
 )
 
 #LOAD EXISTING STUDENTS WHEN PROGRAM STARTS
@@ -26,7 +26,8 @@ def main ():
         print("5. Update students")
         print("6. Statistics")
         print("7. Sort students")
-        print("8. Exit")
+        print("8. Restore student data")
+        print("9. Exit")
 
 
         choice = get_menu_choice()
@@ -52,6 +53,9 @@ def main ():
             sort_students(students)
 
         elif choice == 8:
+            restore_student_data()
+
+        elif choice == 9:
             print ("GOODBYE !!")
             break
 

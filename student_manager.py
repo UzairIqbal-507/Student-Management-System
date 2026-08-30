@@ -4,9 +4,10 @@ from validation import (get_non_empty_input, get_semester,
                         get_student_id, get_search_choice,
                         get_marks, calculate_result,
                         get_percentage_range,get_semester_range,
-                        get_cgpa_range,get_sort_order)
+                        get_cgpa_range,get_sort_order,get_backup_choice)
 
-from utils import save_students
+from utils import (save_students,get_backups,
+                   restore_students,backup_students)
 
 #ADD STUDENTS
 #==================
@@ -581,4 +582,33 @@ def get_subject_marks():
     for subject in subjects:
         marks[subject]=get_marks(subject)
     return marks
+
+# RESTORE STUDENT DATA
+# =========================
+def restore_student_data():
+    backups = get_backups()
+
+    if not backups:
+        print("\nNo Backups Available. ❌")
+        return
+
+    print("\n========== AVAILABLE BACKUPS ==========")
+
+    for index, backup in enumerate(backups, start=1):
+        print(f"{index}. {backup}")
+
+    choice = get_backup_choice(backups)
+
+    selected_backup = backups[choice]
+
+    print(f"\nSelected Backup: {selected_backup}")
+
+    confirmation = input(
+        "Are you sure you want to restore this backup? (y/n): "
+    ).strip().lower()
+
+    if confirmation == "y":
+        restore_students(selected_backup)
+    else:
+        print("\nRestore Cancelled. ❌")
 
