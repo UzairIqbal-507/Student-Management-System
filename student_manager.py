@@ -9,7 +9,8 @@ from validation import (get_non_empty_input, get_semester,
 from utils import (save_students,get_backups,
                    restore_students,backup_students,
                    export_students_csv,export_students_excel,
-                   get_academic_summary,get_student_performance_report)
+                   get_academic_summary,get_student_performance_report,
+                   export_student_performance_pdf)
 
 #ADD STUDENTS
 #==================
@@ -899,7 +900,20 @@ def student_performance_report(students):
 
             print("╚════════════════════════════════════════╝")
 
+            print("\n1. Export Report as PDF")
+            print("2. Back")
+
+            choice = input("Enter your choice: ").strip()
+
+            if choice == "1":
+                export_student_performance_pdf(report)
+
+            elif choice == "2":
+                return
+
+            else:
+                print("\nInvalid choice! ❌")
+
             return
 
     print("\nStudent Not Found! ❌")
-

@@ -4,6 +4,10 @@ import csv
 from datetime import datetime
 from openpyxl import Workbook
 
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+
 #LOAD STUDENTS FROM FILE
 #============================
 def load_students():
@@ -317,3 +321,139 @@ def get_student_performance_report(student):
     "status": status,
     "performance_level": performance_level
 }
+
+# EXPORT STUDENT PERFORMANCE REPORT TO PDF
+# =========================================
+def export_student_performance_pdf(report):
+
+    os.makedirs("reports", exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_path = f"reports/{report['student_id']}_performance_report_{timestamp}.pdf"
+
+    document = SimpleDocTemplate(
+        file_path,
+        pagesize=A4
+    )
+
+    styles = getSampleStyleSheet()
+    elements = []
+
+    elements.append(
+        Paragraph(
+            "Student Performance Report",
+            styles["Title"]
+        )
+    )
+
+    elements.append(Spacer(1, 15))
+
+    elements.append(
+        Paragraph(
+            f"<b>Student ID:</b> {report['student_id']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Name:</b> {report['name']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Department:</b> {report['department']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>Semester:</b> {report['semester']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"<b>CGPA:</b> {report['CGPA']}",
+            styles["Normal"]
+        )
+    )
+
+    elements.append(Spacer(1, 15))
+
+    elements.append(
+        Paragraph(
+            "Academic Result",
+            styles["Heading2"]
+        )
+    )
+
+    if report["marks"]:
+
+        for subject, marks in report["marks"].items():
+            elements.append(
+                Paragraph(
+                    f"{subject}: {marks}",
+                    styles["Normal"]
+                )
+            )
+
+        elements.append(Spacer(1, 10))
+
+        elements.append(
+            Paragraph(
+                f"<b>Total Marks:</b> "
+                f"{report['total_marks']}/{report['maximum_marks']}",
+                styles["Normal"]
+            )
+        )
+
+        elements.append(
+            Paragraph(
+                f"<b>Percentage:</b> "
+                f"{report['percentage']:.2f}%",
+                styles["Normal"]
+            )
+        )
+
+        elements.append(
+            Paragraph(
+                f"<b>Grade:</b> {report['grade']}",
+                styles["Normal"]
+            )
+        )
+
+        elements.append(
+            Paragraph(
+                f"<b>Status:</b> {report['status']}",
+                styles["Normal"]
+            )
+        )
+
+        elements.append(
+            Paragraph(
+                f"<b>Performance Level:</b> "
+                f"{report['performance_level']}",
+                styles["Normal"]
+            )
+        )
+
+    else:
+
+        elements.append(
+            Paragraph(
+                "Academic Result: Not Available",
+                styles["Normal"]
+            )
+        )
+
+    document.build(elements)
+
+    print(
+        f"\nStudent performance PDF exported successfully: "
+        f"{file_path} ✅"
+    )
