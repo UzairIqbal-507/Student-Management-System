@@ -7,7 +7,9 @@ from validation import (get_non_empty_input, get_semester,
                         get_cgpa_range,get_sort_order,get_backup_choice)
 
 from utils import (save_students,get_backups,
-                   restore_students,backup_students)
+                   restore_students,backup_students,
+                   export_students_csv,export_students_excel,
+                   get_academic_summary,get_student_performance_report)
 
 #ADD STUDENTS
 #==================
@@ -268,8 +270,6 @@ def delete_students(students):
             return
     print(f'\nStudent Not Found!!')
 
-#STATISTICS
-#===============
 # STATISTICS
 # ===============
 def statistics(students):
@@ -277,94 +277,70 @@ def statistics(students):
         print("\nNo Students Available.")
         return
 
-    total_students = len(students)
+    summary = get_academic_summary(students)
 
-    total_cgpa = sum(student["CGPA"] for student in students)
+    total_students = summary["total_students"]
+    total_cgpa = summary["total_cgpa"]
+    average_cgpa = summary["average_cgpa"]
+    highest_cgpa = summary["highest_cgpa"]
+    lowest_cgpa = summary["lowest_cgpa"]
 
-    average_cgpa = total_cgpa / total_students
+    department_counts = summary["department_counts"]
+    department_cgpa = summary["department_cgpa"]
 
-    highest_cgpa = max(students, key=lambda student: student["CGPA"])
+    semester_counts = summary["semester_counts"]
 
-    lowest_cgpa = min(students, key=lambda student: student["CGPA"])
-
-    # DEPARTMENT DISTRIBUTION
-    department_counts = {}
-
-    for student in students:
-        department = student["department"]
-        department_counts[department] = department_counts.get(department, 0) + 1
-
-    # DEPARTMENT CGPA TOTAL
-    department_cgpa = {}
-
-    for student in students:
-        department = student["department"]
-        department_cgpa[department] = (
-                department_cgpa.get(department, 0) + student["CGPA"]
-        )
-
-    # SEMESTER DISTRIBUTION
-    semester_counts = {}
-
-    for student in students:
-        semester = student["semester"]
-        semester_counts[semester] = semester_counts.get(semester, 0) + 1
-
-    students_with_results = [
-        student for student in students
-        if "percentage" in student and "grade" in student
-    ]
-    students_without_results = total_students - len(students_with_results)
-
-    if students_with_results:
-        total_percentage = sum(
-            student["percentage"] for student in students_with_results
-        )
-
-        average_percentage = total_percentage / len(students_with_results)
-
-        grade_counts = {}
-
-        for student in students_with_results:
-            grade = student["grade"]
-            grade_counts[grade] = grade_counts.get(grade, 0) + 1
+    students_with_results = summary["students_with_results"]
+    students_without_results = summary["students_without_results"]
+    average_percentage = summary["average_percentage"]
+    grade_counts = summary["grade_counts"]
 
     print("\n============= STATISTICS =============")
     print(f"Total Students: {total_students}")
     print(f"Total CGPA: {total_cgpa}")
     print(f"Average CGPA: {average_cgpa:.2f}")
 
-    print(f"Highest CGPA: {highest_cgpa['CGPA']}   "
-          f"{highest_cgpa['name']}")
+    print(
+        f"Highest CGPA: {highest_cgpa['CGPA']}   "
+        f"{highest_cgpa['name']}"
+    )
 
-    print(f"Lowest CGPA: {lowest_cgpa['CGPA']}   "
-          f"{lowest_cgpa['name']}")
+    print(
+        f"Lowest CGPA: {lowest_cgpa['CGPA']}   "
+        f"{lowest_cgpa['name']}"
+    )
 
-    print("\n-----------Department Distribution-----------:")
+    print("\n----------- Department Distribution -----------")
 
     for department, count in sorted(department_counts.items()):
         print(f"{department}: {count} student(s)")
 
-    print("\n-----------Department Performance---------:")
+    print("\n----------- Department Performance -----------")
 
     for department, count in sorted(department_counts.items()):
-        average_department_cgpa = department_cgpa[department] / count
+        average_department_cgpa = (
+            department_cgpa[department] / count
+        )
 
-        print(f"{department}: "
-              f"{average_department_cgpa:.2f} average CGPA")
+        print(
+            f"{department}: "
+            f"{average_department_cgpa:.2f} average CGPA"
+        )
 
-    print("\n--------Semester Distribution---------:")
+    print("\n----------- Semester Distribution -----------")
+
     for semester, count in sorted(semester_counts.items()):
         print(f"Semester {semester}: {count} student(s)")
 
-    print("\n---------Academic Result Availability--------:")
+    print("\n----------- Academic Result Availability -----------")
+
     print(f"Students with results: {len(students_with_results)}")
     print(f"Students without results: {students_without_results}")
 
-    if students_with_results:
+    if average_percentage is not None:
         print(f"\nAverage Percentage: {average_percentage:.2f}%")
 
-        print("-------Grade Distribution-------:")
+        print("------- Grade Distribution -------")
 
         for grade, count in sorted(grade_counts.items()):
             print(f"{grade}: {count} student(s)")
@@ -373,6 +349,253 @@ def statistics(students):
         print("\nAverage Percentage: Not Available")
         print("Grade Distribution: Not Available")
 
+
+# STUDENT DASHBOARD
+# =========================
+def dashboard(students):
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    summary = get_academic_summary(students)
+
+    total_students = summary["total_students"]
+    average_cgpa = summary["average_cgpa"]
+
+    highest_cgpa = summary["highest_cgpa"]
+    lowest_cgpa = summary["lowest_cgpa"]
+
+    students_with_results = summary["students_with_results"]
+    students_without_results = summary["students_without_results"]
+    grade_counts = summary["grade_counts"]
+    department_counts = summary["department_counts"]
+    department_cgpa = summary["department_cgpa"]
+    semester_counts = summary["semester_counts"]
+    semester_cgpa = summary["semester_cgpa"]
+
+    passed_students = [
+        student for student in students_with_results
+        if student["percentage"] >= 50
+    ]
+
+    failed_students = [
+        student for student in students_with_results
+        if student["percentage"] < 50
+    ]
+    if students_with_results:
+        pass_rate = (len(passed_students) / len(students_with_results) ) * 100
+    else:
+        pass_rate = None
+
+    top_performers = sorted(
+        students_with_results,
+        key=lambda student: student["percentage"],
+        reverse=True
+    )[:3]
+
+    best_department = max(
+        department_cgpa,
+        key=lambda department:
+        department_cgpa[department] / department_counts[department]
+    )
+
+    best_department_cgpa = (
+        department_cgpa[best_department]
+        / department_counts[best_department]
+    )
+
+    best_semester = max(
+        semester_cgpa,
+        key=lambda semester:
+        semester_cgpa[semester] / semester_counts[semester]
+    )
+
+    best_semester_cgpa = (
+        semester_cgpa[best_semester]
+        / semester_counts[best_semester]
+    )
+
+    at_risk_students = [
+        student for student in students_with_results
+        if student["percentage"] < 70
+    ]
+
+    print("\n╔════════════════════════════════════════╗")
+    print("║        STUDENT MANAGEMENT DASHBOARD    ║")
+    print("╠════════════════════════════════════════╣")
+    print(f"║ Total Students     : {total_students:<15}║")
+    print(f"║ Average CGPA       : {average_cgpa:<15.2f}║")
+    print(f"║ Highest CGPA       : {highest_cgpa['CGPA']:<15}║")
+    print(f"║ Lowest CGPA        : {lowest_cgpa['CGPA']:<15}║")
+    print("╠════════════════════════════════════════╣")
+
+    print("║ Departments                             ║")
+
+    for department, count in sorted(department_counts.items()):
+        print(f"║ {department:<20}: {count:<12}║")
+
+    print("╠════════════════════════════════════════╗")
+    print("║ Performance Leaders                    ║")
+    print(
+        f"║ Best Department : {best_department:<15}║"
+    )
+    print(
+        f"║ Average CGPA    : {best_department_cgpa:<15.2f}║"
+    )
+    print(
+        f"║ Best Semester   : Semester {best_semester:<7}║"
+    )
+    print(
+        f"║ Average CGPA    : {best_semester_cgpa:<15.2f}║"
+    )
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Department Performance                 ║")
+
+    for department, count in sorted(department_counts.items()):
+        average_department_cgpa = (
+            department_cgpa[department] / count
+        )
+
+        print(
+            f"║ {department:<20}: "
+            f"{average_department_cgpa:.2f} CGPA   ║"
+        )
+
+    print("║ Semesters                               ║")
+
+    for semester, count in sorted(semester_counts.items()):
+        print(f"║ Semester {semester:<11}: {count:<12}║")
+
+
+    print("╠════════════════════════════════════════╗")
+    print("║ Semester Performance                  ║")
+
+    for semester, count in sorted(semester_counts.items()):
+        average_semester_cgpa = (
+            semester_cgpa[semester] / count
+        )
+
+        print(
+            f"║ Semester {semester:<11}: "
+            f"{average_semester_cgpa:.2f} CGPA   ║"
+        )
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Results Overview                       ║")
+    print(f"║ Results Available : {len(students_with_results):<15}║")
+    print(f"║ Results Missing   : {students_without_results:<15}║")
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Result Status                          ║")
+    print(f"║ Passed           : {len(passed_students):<18}║")
+    print(f"║ Failed           : {len(failed_students):<18}║")
+    print(f"║ Missing          : {students_without_results:<18}║")
+    if pass_rate is not None:
+        print(f"║ Pass Rate        : {pass_rate:<17.2f}%║")
+    else:
+        print("║ Pass Rate        : Not Available     ║")
+
+    print("╠════════════════════════════════════════╣")
+
+    average_percentage = summary["average_percentage"]
+
+    print("╠════════════════════════════════════════╗")
+    print("║ Academic Insight                       ║")
+    print(f"║ Average CGPA       : {average_cgpa:<14.2f}║")
+
+    if average_percentage is not None:
+        print(
+            f"║ Average Percentage : "
+            f"{average_percentage:<14.2f}%║"
+        )
+    else:
+        print("║ Average Percentage : Not Available    ║")
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Top Performers                         ║")
+
+    if top_performers:
+        for index, student in enumerate(top_performers, start=1):
+            print(
+                f"║ {index}. {student['name']:<12} "
+                f"{student['percentage']:.2f}%  "
+                f"CGPA: {student['CGPA']:.2f}  "
+                f"{student['grade']:<3} ║"
+            )
+
+    else:
+        print("║ No Results Available                  ║")
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Grade Distribution                     ║")
+
+    if grade_counts:
+        for grade, count in sorted(grade_counts.items()):
+            print(f"║ Grade {grade:<10}: {count:<15}║")
+    else:
+        print("║ No Grades Available                   ║")
+
+    excellent = 0
+    good = 0
+    needs_improvement = 0
+
+    for student in students_with_results:
+        percentage = student["percentage"]
+
+        if percentage >= 85:
+            excellent += 1
+        elif percentage >= 70:
+            good += 1
+        else:
+            needs_improvement += 1
+
+    print("╠════════════════════════════════════════╗")
+    print("║ At-Risk Students                       ║")
+
+    if at_risk_students:
+        for student in at_risk_students:
+            print(
+                f"║ {student['name']:<15} "
+                f"{student['percentage']:.2f}% "
+                f"({student['grade']})              ║"
+            )
+    else:
+        print("║ No At-Risk Students 🎉                 ║")
+
+    print("╠════════════════════════════════════════╣")
+    print("║ Performance Summary                    ║")
+    print(f"║ Excellent (85%+) : {excellent:<18}║")
+    print(f"║ Good (70-84%)    : {good:<18}║")
+    print(f"║ Needs Improvement: {needs_improvement:<18}║")
+
+    print("╚════════════════════════════════════════╝")
+
+# EXPORT STUDENT REPORT
+# =========================
+def export_student_report(students):
+    if not students:
+        print("\nNo Students Available to Export. ❌")
+        return
+
+    print("\n========== EXPORT STUDENT REPORT ==========")
+    print("1. Export as CSV")
+    print("2. Export as Excel")
+    print("3. Back")
+
+    choice = input("Enter your choice: ").strip()
+
+    if choice == "1":
+        export_students_csv(students)
+
+    elif choice == "2":
+        export_students_excel(students)
+
+    elif choice == "3":
+        return
+
+    else:
+        print("\nInvalid export choice! ❌")
 
 #UPDATE STUDENTS
 #==================
@@ -611,4 +834,72 @@ def restore_student_data():
         restore_students(selected_backup)
     else:
         print("\nRestore Cancelled. ❌")
+
+# STUDENT PERFORMANCE REPORT
+# =========================
+def student_performance_report(students):
+
+    if not students:
+        print("\nNo Students Available.")
+        return
+
+    student_id = get_student_id()
+
+    for student in students:
+
+        if student["student_id"] == student_id:
+
+            report = get_student_performance_report(student)
+
+            print("\n╔════════════════════════════════════════╗")
+            print("║       STUDENT PERFORMANCE REPORT       ║")
+            print("╠════════════════════════════════════════╣")
+
+            print(f"║ ID         : {report['student_id']:<23}║")
+            print(f"║ Name       : {report['name']:<23}║")
+            print(f"║ Department : {report['department']:<23}║")
+            print(f"║ Semester   : {report['semester']:<23}║")
+            print(f"║ CGPA       : {report['CGPA']:<23}║")
+
+            print("╠════════════════════════════════════════╣")
+            print("║ Academic Result                        ║")
+
+            if report["marks"]:
+
+                for subject, marks in report["marks"].items():
+                    print(f"║ {subject:<15}: {marks:<15}║")
+
+                print(
+                    f"║ Total Marks: "
+                    f"{report['total_marks']}/{report['maximum_marks']:<10}║"
+                )
+
+                print(
+                    f"║ Percentage : "
+                    f"{report['percentage']:<15.2f}%║"
+                )
+
+                print(
+                    f"║ Grade      : "
+                    f"{report['grade']:<23}║"
+                )
+
+                print(
+                    f"║ Status     : "
+                    f"{report['status']:<23}║"
+                )
+
+                print(
+                    f"║ Performance: "
+                    f"{report['performance_level']:<23}║"
+                )
+
+            else:
+                print("║ Academic Result: Not Available         ║")
+
+            print("╚════════════════════════════════════════╝")
+
+            return
+
+    print("\nStudent Not Found! ❌")
 

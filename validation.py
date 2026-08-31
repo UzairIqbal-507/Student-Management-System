@@ -145,8 +145,8 @@ def get_grade(percentage):
 def get_menu_choice():
     while True:
         try:
-            choice=int(input("Enter your choice (1-9): "))
-            if 1<=choice<=9:
+            choice=int(input("Enter your choice (1-12): "))
+            if 1<=choice<=12:
                 return choice
             print ("Choice MUST BE IN RANGE !!!")
 

@@ -1,0 +1,10 @@
+student_id,name,email,phone,department,semester,CGPA,total_marks,maximum_marks,percentage,grade
+1,uzair,uzair@gmail.com,03000000000,Data Science,3,3.57,544.0,600,90.66666666666666,A+
+2,rehan,rehan@gmail.com,03000000001,Computer Science,4,3.38,487.0,600,81.16666666666667,A
+3,ayan,ayan@gmail.com,03000000002,Software Engineering,5,3.95,,,,
+4,ali,ali@gmail.com,03000000003,Information Technology,6,3.42,,,,
+5,ukasha,ukasha@gmail.com,03000000004,Data Science,3,3.62,,,,
+6,muzammil,muzammil@gmail.com,03000000005,Information Technology,3,3.04,421.0,600,70.16666666666667,B
+7,abdul,abdul@gmail.com,03000000006,Computer Science,4,3.44,462.0,600,77.0,B
+8,sameer,sameer@gmail.com,03000000007,Data Science,3,3.64,442.0,600,73.66666666666667,B
+9,moiz,moiz@gmail.com,03000000008,Computer Science,4,3.77,461.0,600,76.83333333333333,B

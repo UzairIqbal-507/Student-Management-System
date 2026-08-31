@@ -1,6 +1,8 @@
 import json
 import os
+import csv
 from datetime import datetime
+from openpyxl import Workbook
 
 #LOAD STUDENTS FROM FILE
 #============================
@@ -23,8 +25,7 @@ def save_students(students):
         json.dump(students, json_file, indent=4)
 
 
-# BACKUP STUDENTS DATA
-# =========================
+
 # BACKUP STUDENTS DATA
 # =========================
 def backup_students():
@@ -82,3 +83,237 @@ def restore_students(backup_file):
     except (FileNotFoundError, json.JSONDecodeError):
         print("\nUnable to restore this backup. ❌")
 
+# EXPORT STUDENTS TO CSV
+# =========================
+def export_students_csv(students):
+    if not students:
+        print("\nNo Students Available to Export. ❌")
+        return
+
+    os.makedirs("reports", exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_path = f"reports/student_report_{timestamp}.csv"
+
+    fields = [
+        "student_id",
+        "name",
+        "email",
+        "phone",
+        "department",
+        "semester",
+        "CGPA",
+        "total_marks",
+        "maximum_marks",
+        "percentage",
+        "grade"
+    ]
+
+    with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=fields,
+            extrasaction="ignore"
+        )
+
+        writer.writeheader()
+
+        for student in students:
+            writer.writerow(student)
+
+    print(f"\nStudent report exported successfully: {file_path} ✅")
+
+# EXPORT STUDENTS TO EXCEL
+# =========================
+def export_students_excel(students):
+    if not students:
+        print("\nNo Students Available to Export. ❌")
+        return
+
+    os.makedirs("reports", exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_path = f"reports/student_report_{timestamp}.xlsx"
+
+    fields = [
+        "student_id",
+        "name",
+        "email",
+        "phone",
+        "department",
+        "semester",
+        "CGPA",
+        "total_marks",
+        "maximum_marks",
+        "percentage",
+        "grade"
+    ]
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Students"
+
+    sheet.append(fields)
+
+    for student in students:
+        row = []
+
+        for field in fields:
+            row.append(student.get(field, ""))
+
+        sheet.append(row)
+
+    workbook.save(file_path)
+
+    print(f"\nStudent Excel report exported successfully: {file_path} ✅")
+
+# ACADEMIC SUMMARY
+# =========================
+def get_academic_summary(students):
+
+    total_students = len(students)
+
+    total_cgpa = sum(
+        student["CGPA"] for student in students
+    )
+
+    average_cgpa = (
+        total_cgpa / total_students
+        if total_students
+        else 0
+    )
+
+    highest_cgpa = (
+        max(students, key=lambda student: student["CGPA"])
+        if students
+        else None
+    )
+
+    lowest_cgpa = (
+        min(students, key=lambda student: student["CGPA"])
+        if students
+        else None
+    )
+
+    department_counts = {}
+    department_cgpa = {}
+
+    semester_counts = {}
+    semester_cgpa = {}
+
+    students_with_results = []
+
+    for student in students:
+
+        # Department statistics
+        department = student["department"]
+
+        department_counts[department] = (
+            department_counts.get(department, 0) + 1
+        )
+
+        department_cgpa[department] = (
+            department_cgpa.get(department, 0)
+            + student["CGPA"]
+        )
+
+        # Semester statistics
+        semester = student["semester"]
+
+        semester_counts[semester] = (
+            semester_counts.get(semester, 0) + 1
+        )
+
+        semester_cgpa[semester] = (
+            semester_cgpa.get(semester, 0)
+            + student["CGPA"]
+        )
+
+        # Result availability
+        if "percentage" in student and "grade" in student:
+            students_with_results.append(student)
+
+    students_without_results = (
+        total_students - len(students_with_results)
+    )
+
+    if students_with_results:
+
+        average_percentage = (
+            sum(
+                student["percentage"]
+                for student in students_with_results
+            )
+            / len(students_with_results)
+        )
+
+    else:
+        average_percentage = None
+
+    grade_counts = {}
+
+    for student in students_with_results:
+
+        grade = student["grade"]
+
+        grade_counts[grade] = (
+            grade_counts.get(grade, 0) + 1
+        )
+
+    return {
+        "total_students": total_students,
+        "total_cgpa": total_cgpa,
+        "average_cgpa": average_cgpa,
+        "highest_cgpa": highest_cgpa,
+        "lowest_cgpa": lowest_cgpa,
+        "department_counts": department_counts,
+        "department_cgpa": department_cgpa,
+        "semester_counts": semester_counts,
+        "semester_cgpa": semester_cgpa,
+        "students_with_results": students_with_results,
+        "students_without_results": students_without_results,
+        "average_percentage": average_percentage,
+        "grade_counts": grade_counts
+    }
+
+# STUDENT PERFORMANCE REPORT
+# =========================
+
+def get_student_performance_report(student):
+
+    percentage = student.get("percentage")
+
+    if percentage is None:
+        performance_level = "Result Not Available"
+        status = "Result Not Available"
+
+    elif percentage >= 85:
+        performance_level = "Excellent"
+        status = "Passed"
+
+    elif percentage >= 70:
+        performance_level = "Good"
+        status = "Passed"
+
+    elif percentage >= 50:
+        performance_level = "Satisfactory"
+        status = "Passed"
+
+    else:
+        performance_level = "Needs Improvement"
+        status = "Failed"
+
+    return {
+    "student_id": student["student_id"],
+    "name": student["name"],
+    "department": student["department"],
+    "semester": student["semester"],
+    "CGPA": student["CGPA"],
+    "marks": student.get("marks", {}),
+    "total_marks": student.get("total_marks"),
+    "maximum_marks": student.get("maximum_marks"),
+    "percentage": percentage,
+    "grade": student.get("grade"),
+    "status": status,
+    "performance_level": performance_level
+}
