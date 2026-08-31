@@ -373,6 +373,10 @@ def dashboard(students):
     department_cgpa = summary["department_cgpa"]
     semester_counts = summary["semester_counts"]
     semester_cgpa = summary["semester_cgpa"]
+    subject_averages = summary["subject_averages"]
+    highest_subject = summary["highest_subject"]
+    lowest_subject = summary["lowest_subject"]
+    student_ranking = summary["student_ranking"]
 
     passed_students = [
         student for student in students_with_results
@@ -481,6 +485,35 @@ def dashboard(students):
             f"║ Semester {semester:<11}: "
             f"{average_semester_cgpa:.2f} CGPA   ║"
         )
+    print("╠════════════════════════════════════════╗")
+    print("║ Subject Performance                    ║")
+
+    for subject, average in sorted(subject_averages.items()):
+        print(
+            f"║ {subject:<20}: "
+            f"{average:.2f} average marks ║"
+        )
+
+    print("╠════════════════════════════════════════╗")
+    print("║ Subject Insights                       ║")
+
+    if highest_subject:
+        print(
+            f"║ Best Subject    : {highest_subject:<20}║"
+        )
+        print(
+            f"║ Average Marks   : "
+            f"{subject_averages[highest_subject]:.2f}             ║"
+        )
+
+    if lowest_subject:
+        print(
+            f"║ Weakest Subject : {lowest_subject:<20}║"
+        )
+        print(
+            f"║ Average Marks   : "
+            f"{subject_averages[lowest_subject]:.2f}             ║"
+        )
 
     print("╠════════════════════════════════════════╣")
     print("║ Results Overview                       ║")
@@ -569,6 +602,15 @@ def dashboard(students):
     print(f"║ Excellent (85%+) : {excellent:<18}║")
     print(f"║ Good (70-84%)    : {good:<18}║")
     print(f"║ Needs Improvement: {needs_improvement:<18}║")
+
+    print("╠════════════════════════════════════════╗")
+    print("║ Top Students                           ║")
+
+    for rank, student in enumerate(student_ranking[:5], start=1):
+        print(
+            f"║ {rank}. {student['name']:<18} "
+            f"{student.get('percentage', 0):>6.2f}% ║"
+        )
 
     print("╚════════════════════════════════════════╝")
 

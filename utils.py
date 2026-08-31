@@ -207,6 +207,7 @@ def get_academic_summary(students):
 
     students_with_results = []
 
+    # STUDENT STATISTICS
     for student in students:
 
         # Department statistics
@@ -241,6 +242,7 @@ def get_academic_summary(students):
         total_students - len(students_with_results)
     )
 
+    # AVERAGE PERCENTAGE
     if students_with_results:
 
         average_percentage = (
@@ -254,6 +256,7 @@ def get_academic_summary(students):
     else:
         average_percentage = None
 
+    # GRADE COUNTS
     grade_counts = {}
 
     for student in students_with_results:
@@ -263,6 +266,54 @@ def get_academic_summary(students):
         grade_counts[grade] = (
             grade_counts.get(grade, 0) + 1
         )
+
+    # SUBJECT ANALYTICS
+    subject_marks = {}
+    subject_counts = {}
+
+    for student in students:
+
+        for subject, marks in student.get("marks", {}).items():
+
+            subject_marks[subject] = (
+                subject_marks.get(subject, 0) + marks
+            )
+
+            subject_counts[subject] = (
+                subject_counts.get(subject, 0) + 1
+            )
+
+    subject_averages = {}
+
+    for subject in subject_marks:
+
+        subject_averages[subject] = (
+            subject_marks[subject]
+            / subject_counts[subject]
+        )
+
+    # BEST AND WEAKEST SUBJECT
+    highest_subject = None
+    lowest_subject = None
+
+    if subject_averages:
+
+        highest_subject = max(
+            subject_averages,
+            key=subject_averages.get
+        )
+
+        lowest_subject = min(
+            subject_averages,
+            key=subject_averages.get
+        )
+
+    # STUDENT RANKING
+    student_ranking = sorted(
+        students_with_results,
+        key=lambda student: student.get("percentage", 0),
+        reverse=True
+    )
 
     return {
         "total_students": total_students,
@@ -274,11 +325,18 @@ def get_academic_summary(students):
         "department_cgpa": department_cgpa,
         "semester_counts": semester_counts,
         "semester_cgpa": semester_cgpa,
+        "subject_marks": subject_marks,
+        "subject_counts": subject_counts,
+        "subject_averages": subject_averages,
+        "highest_subject": highest_subject,
+        "lowest_subject": lowest_subject,
         "students_with_results": students_with_results,
+        "student_ranking": student_ranking,
         "students_without_results": students_without_results,
         "average_percentage": average_percentage,
         "grade_counts": grade_counts
     }
+
 
 # STUDENT PERFORMANCE REPORT
 # =========================
