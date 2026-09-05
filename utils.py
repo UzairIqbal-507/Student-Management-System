@@ -177,8 +177,9 @@ def get_academic_summary(students):
 
     total_students = len(students)
 
+    # Safe float CGPA handling (defaults to 0.0 if CGPA is None)
     total_cgpa = sum(
-        student["CGPA"] for student in students
+        float(student.get("CGPA") or 0.0) for student in students
     )
 
     average_cgpa = (
@@ -188,13 +189,13 @@ def get_academic_summary(students):
     )
 
     highest_cgpa = (
-        max(students, key=lambda student: student["CGPA"])
+        max(students, key=lambda student: float(student.get("CGPA") or 0.0))
         if students
         else None
     )
 
     lowest_cgpa = (
-        min(students, key=lambda student: student["CGPA"])
+        min(students, key=lambda student: float(student.get("CGPA") or 0.0))
         if students
         else None
     )
@@ -209,33 +210,32 @@ def get_academic_summary(students):
 
     # STUDENT STATISTICS
     for student in students:
+        cgpa_val = float(student.get("CGPA") or 0.0)
 
         # Department statistics
-        department = student["department"]
+        department = student.get("department", "Unknown")
 
         department_counts[department] = (
             department_counts.get(department, 0) + 1
         )
 
         department_cgpa[department] = (
-            department_cgpa.get(department, 0)
-            + student["CGPA"]
+            department_cgpa.get(department, 0.0) + cgpa_val
         )
 
         # Semester statistics
-        semester = student["semester"]
+        semester = student.get("semester", 1)
 
         semester_counts[semester] = (
             semester_counts.get(semester, 0) + 1
         )
 
         semester_cgpa[semester] = (
-            semester_cgpa.get(semester, 0)
-            + student["CGPA"]
+            semester_cgpa.get(semester, 0.0) + cgpa_val
         )
 
         # Result availability
-        if "percentage" in student and "grade" in student:
+        if student.get("percentage") is not None and student.get("grade") is not None:
             students_with_results.append(student)
 
     students_without_results = (
@@ -244,25 +244,20 @@ def get_academic_summary(students):
 
     # AVERAGE PERCENTAGE
     if students_with_results:
-
         average_percentage = (
             sum(
-                student["percentage"]
+                float(student["percentage"])
                 for student in students_with_results
             )
             / len(students_with_results)
         )
-
     else:
         average_percentage = None
 
     # GRADE COUNTS
     grade_counts = {}
-
     for student in students_with_results:
-
-        grade = student["grade"]
-
+        grade = student.get("grade", "N/A")
         grade_counts[grade] = (
             grade_counts.get(grade, 0) + 1
         )
@@ -272,37 +267,31 @@ def get_academic_summary(students):
     subject_counts = {}
 
     for student in students:
-
         for subject, marks in student.get("marks", {}).items():
-
-            subject_marks[subject] = (
-                subject_marks.get(subject, 0) + marks
-            )
-
-            subject_counts[subject] = (
-                subject_counts.get(subject, 0) + 1
-            )
+            if marks is not None:
+                subject_marks[subject] = (
+                    subject_marks.get(subject, 0.0) + float(marks)
+                )
+                subject_counts[subject] = (
+                    subject_counts.get(subject, 0) + 1
+                )
 
     subject_averages = {}
-
     for subject in subject_marks:
-
-        subject_averages[subject] = (
-            subject_marks[subject]
-            / subject_counts[subject]
-        )
+        if subject_counts[subject] > 0:
+            subject_averages[subject] = (
+                subject_marks[subject] / subject_counts[subject]
+            )
 
     # BEST AND WEAKEST SUBJECT
     highest_subject = None
     lowest_subject = None
 
     if subject_averages:
-
         highest_subject = max(
             subject_averages,
             key=subject_averages.get
         )
-
         lowest_subject = min(
             subject_averages,
             key=subject_averages.get
@@ -311,7 +300,7 @@ def get_academic_summary(students):
     # STUDENT RANKING
     student_ranking = sorted(
         students_with_results,
-        key=lambda student: student.get("percentage", 0),
+        key=lambda student: float(student.get("percentage") or 0.0),
         reverse=True
     )
 
@@ -383,135 +372,42 @@ def get_student_performance_report(student):
 # EXPORT STUDENT PERFORMANCE REPORT TO PDF
 # =========================================
 def export_student_performance_pdf(report):
+    try:
+        os.makedirs("reports", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_path = f"reports/{report['student_id']}_performance_report_{timestamp}.pdf"
 
-    os.makedirs("reports", exist_ok=True)
+        document = SimpleDocTemplate(file_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_path = f"reports/{report['student_id']}_performance_report_{timestamp}.pdf"
+        elements.append(Paragraph("Student Performance Report", styles["Title"]))
+        elements.append(Spacer(1, 15))
 
-    document = SimpleDocTemplate(
-        file_path,
-        pagesize=A4
-    )
+        elements.append(Paragraph(f"<b>Student ID:</b> {report['student_id']}", styles["Normal"]))
+        elements.append(Paragraph(f"<b>Name:</b> {report['name']}", styles["Normal"]))
+        elements.append(Paragraph(f"<b>Department:</b> {report['department']}", styles["Normal"]))
+        elements.append(Paragraph(f"<b>Semester:</b> {report['semester']}", styles["Normal"]))
+        elements.append(Paragraph(f"<b>CGPA:</b> {report['CGPA']}", styles["Normal"]))
 
-    styles = getSampleStyleSheet()
-    elements = []
+        elements.append(Spacer(1, 15))
+        elements.append(Paragraph("Academic Result", styles["Heading2"]))
 
-    elements.append(
-        Paragraph(
-            "Student Performance Report",
-            styles["Title"]
-        )
-    )
+        if report["marks"]:
+            for subject, marks in report["marks"].items():
+                elements.append(Paragraph(f"{subject}: {marks}", styles["Normal"]))
 
-    elements.append(Spacer(1, 15))
+            elements.append(Spacer(1, 10))
+            elements.append(Paragraph(f"<b>Total Marks:</b> {report['total_marks']}/{report['maximum_marks']}", styles["Normal"]))
+            elements.append(Paragraph(f"<b>Percentage:</b> {report['percentage']:.2f}%", styles["Normal"]))
+            elements.append(Paragraph(f"<b>Grade:</b> {report['grade']}", styles["Normal"]))
+            elements.append(Paragraph(f"<b>Status:</b> {report['status']}", styles["Normal"]))
+            elements.append(Paragraph(f"<b>Performance Level:</b> {report['performance_level']}", styles["Normal"]))
+        else:
+            elements.append(Paragraph("Academic Result: Not Available", styles["Normal"]))
 
-    elements.append(
-        Paragraph(
-            f"<b>Student ID:</b> {report['student_id']}",
-            styles["Normal"]
-        )
-    )
+        document.build(elements)
+        print(f"\nStudent performance PDF exported successfully: {file_path} ✅")
 
-    elements.append(
-        Paragraph(
-            f"<b>Name:</b> {report['name']}",
-            styles["Normal"]
-        )
-    )
-
-    elements.append(
-        Paragraph(
-            f"<b>Department:</b> {report['department']}",
-            styles["Normal"]
-        )
-    )
-
-    elements.append(
-        Paragraph(
-            f"<b>Semester:</b> {report['semester']}",
-            styles["Normal"]
-        )
-    )
-
-    elements.append(
-        Paragraph(
-            f"<b>CGPA:</b> {report['CGPA']}",
-            styles["Normal"]
-        )
-    )
-
-    elements.append(Spacer(1, 15))
-
-    elements.append(
-        Paragraph(
-            "Academic Result",
-            styles["Heading2"]
-        )
-    )
-
-    if report["marks"]:
-
-        for subject, marks in report["marks"].items():
-            elements.append(
-                Paragraph(
-                    f"{subject}: {marks}",
-                    styles["Normal"]
-                )
-            )
-
-        elements.append(Spacer(1, 10))
-
-        elements.append(
-            Paragraph(
-                f"<b>Total Marks:</b> "
-                f"{report['total_marks']}/{report['maximum_marks']}",
-                styles["Normal"]
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                f"<b>Percentage:</b> "
-                f"{report['percentage']:.2f}%",
-                styles["Normal"]
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                f"<b>Grade:</b> {report['grade']}",
-                styles["Normal"]
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                f"<b>Status:</b> {report['status']}",
-                styles["Normal"]
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                f"<b>Performance Level:</b> "
-                f"{report['performance_level']}",
-                styles["Normal"]
-            )
-        )
-
-    else:
-
-        elements.append(
-            Paragraph(
-                "Academic Result: Not Available",
-                styles["Normal"]
-            )
-        )
-
-    document.build(elements)
-
-    print(
-        f"\nStudent performance PDF exported successfully: "
-        f"{file_path} ✅"
-    )
+    except Exception as e:
+        print(f"\nError generating PDF: {e} ❌")

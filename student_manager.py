@@ -3,27 +3,47 @@ from validation import (get_non_empty_input, get_semester,
                         get_email, get_phone, get_name,
                         get_student_id, get_search_choice,
                         get_marks, calculate_result,
-                        get_percentage_range,get_semester_range,
-                        get_cgpa_range,get_sort_order,get_backup_choice)
+                        get_percentage_range, get_semester_range,
+                        get_cgpa_range, get_sort_order, get_backup_choice)
 
-from utils import (save_students,get_backups,
-                   restore_students,backup_students,
-                   export_students_csv,export_students_excel,
-                   get_academic_summary,get_student_performance_report,
+from utils import (get_backups, restore_students, backup_students,
+                   export_students_csv, export_students_excel,
+                   get_academic_summary, get_student_performance_report,
                    export_student_performance_pdf)
 
-#ADD STUDENTS
-#==================
-def add_students(students):
+from database import (db_get_all_students, db_get_student_by_id,
+                      db_add_student, db_update_student, db_delete_student)
 
-    print ("\n=====Add students======")
 
+# GET MARKS FOR SUBJECT
+# ========================
+def get_subject_marks(department):
+    subject_mapping = {
+        "Data Science": ["Python", "Statistics", "Machine Learning", "Linear Algebra"],
+        "Computer Science": ["Programming Fundamentals", "Data Structures", "DBMS", "OS"],
+        "Software Engineering": ["Software Design", "SQA", "Web Engineering", "DBMS"],
+        "Information Technology": ["Networking", "Cyber Security", "Web Tech", "Cloud Computing"]
+    }
+
+    subjects = subject_mapping.get(department, ["Subject 1", "Subject 2", "Subject 3", "Subject 4"])
+    marks = {}
+    for subject in subjects:
+        marks[subject] = get_marks(subject)
+    return marks
+
+
+# ADD STUDENTS
+# ==================
+def add_students():
+    print("\n===== Add students ======")
+
+    students = db_get_all_students()
     student_id = get_student_id()
 
-    #Check duplicate ID in it
+    # Check duplicate ID
     for student in students:
         if student["student_id"] == student_id:
-            print ("STUDENT ALREADY EXIST !!...☠️")
+            print("STUDENT ALREADY EXIST !!...☠️")
             return
 
     name = get_name()
@@ -42,18 +62,17 @@ def add_students(students):
             return
 
     department = get_department()
-
     semester = get_semester()
     cgpa = get_cgpa()
-    marks=get_subject_marks()
-    total_marks,maximum_marks,percentage,grade = calculate_result(marks)
+    marks = get_subject_marks(department)
+    total_marks, maximum_marks, percentage, grade = calculate_result(marks)
 
-    student={
-        "student_id":student_id,
-        "name":name,
-        "email":email,
-        "phone":phone,
-        "department":department,
+    student = {
+        "student_id": student_id,
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "department": department,
         "semester": semester,
         "CGPA": cgpa,
         "marks": marks,
@@ -62,20 +81,20 @@ def add_students(students):
         "percentage": percentage,
         "grade": grade
     }
-    students.append(student)
 
-    save_students(students)
+    db_add_student(student)
+    print("\n===== Student added successfully! ✅ ======")
 
-    print ("\n=====Student added successfully!======")
 
-#VIEW STUDENTS
-#=====================
-def view_students(students):
+# VIEW STUDENTS
+# =====================
+def view_students():
+    students = db_get_all_students()
     if not students:
-        print ("STUDENT NOT FOUND!!!")
+        print("\nSTUDENT NOT FOUND!!!")
         return
 
-    print ("\n==========Students===========")
+    print("\n========== Students ===========")
     for student in students:
         print(f'id : {student["student_id"]}')
         print(f'name: {student["name"]}')
@@ -84,34 +103,32 @@ def view_students(students):
         print(f'department: {student["department"]}')
         print(f'semester: {student["semester"]}')
         print(f'cgpa: {student["CGPA"]}')
-        print(f'cgpa: {student["CGPA"]}')
 
-        if "marks" in student:
+        if "marks" in student and student["marks"]:
             print("----- Academic Result -----")
-
             for subject, marks in student["marks"].items():
                 print(f'{subject}: {marks}')
 
             print(f'Total Marks: {student["total_marks"]}/{student["maximum_marks"]}')
-            print(f'Percentage: {student["percentage"]:.2f}%')
+            perc = student.get("percentage")
+            print(f'Percentage: {perc:.2f}%' if perc is not None else 'Percentage: N/A')
             print(f'Grade: {student["grade"]}')
 
         else:
             print("Academic Result: Not Available...❌")
 
-        print(f'--------------------------------------------')
+        print('--------------------------------------------')
 
 
-#SEARCH STUDENTS
-#====================
-def search_students(students):
-
+# SEARCH STUDENTS
+# ====================
+def search_students():
+    students = db_get_all_students()
     if not students:
-        print ("\nSTUDENT NOT FOUND!!!❌")
+        print("\nSTUDENT NOT FOUND!!!❌")
         return
 
-    print ("\n==========SEARCH STUDENTS===========")
-
+    print("\n========== SEARCH STUDENTS ===========")
     print("1. SEARCH BY ID.... ")
     print("2. SEARCH BY NAME... ")
     print("3. SEARCH BY DEPARTMENT... ")
@@ -123,97 +140,53 @@ def search_students(students):
     choice = get_search_choice()
 
     if choice == "1":
-
         student_id = get_student_id()
-
-        for student in students:
-            if student["student_id"] == student_id:
-                display_student(student)
-                return
-
-        print("\nStudent not found❌")
+        student = db_get_student_by_id(student_id)
+        if student:
+            display_student(student)
+        else:
+            print("\nStudent not found❌")
 
     elif choice == "2":
         name = input("Enter student name: ").strip().lower()
-
-        matching_students =[]
-
-        for student in students:
-            if name in student["name"].lower():
-                matching_students.append(student)
-
+        matching_students = [s for s in students if name in s["name"].lower()]
         display_students_list(matching_students)
 
     elif choice == "3":
         department = get_department()
-
-        matching_students = []
-
-        for student in students:
-            if student["department"] == department:
-                matching_students.append(student)
-
+        matching_students = [s for s in students if s["department"] == department]
         display_students_list(matching_students)
-
-
 
     elif choice == "4":
         print("\nSelect Semester:")
         semester = get_semester()
-
-        matching_students = []
-
-        for student in students:
-            if student["semester"] == semester:
-                matching_students.append(student)
-
+        matching_students = [s for s in students if s["semester"] == semester]
         display_students_list(matching_students)
 
     elif choice == "5":
         print("\nSelect CGPA Range:")
-
         minimum, maximum = get_cgpa_range()
-
-        matching_students = []
-
-        for student in students:
-            if minimum <= student["CGPA"] <= maximum:
-                matching_students.append(student)
-
+        matching_students = [s for s in students if minimum <= s["CGPA"] <= maximum]
         display_students_list(matching_students)
 
     elif choice == "6":
         minimum, maximum = get_percentage_range()
-
-        matching_students = []
-
-        for student in students:
-            if "percentage" in student:
-                if minimum <= student["percentage"] <= maximum:
-                    matching_students.append(student)
-
+        matching_students = [s for s in students if s.get("percentage") is not None and minimum <= s["percentage"] <= maximum]
         display_students_list(matching_students)
 
     elif choice == "7":
         minimum, maximum = get_semester_range()
-
-        matching_students = []
-
-        for student in students:
-            if minimum <= student["semester"] <= maximum:
-                matching_students.append(student)
-
+        matching_students = [s for s in students if minimum <= s["semester"] <= maximum]
         display_students_list(matching_students)
 
     else:
-        print("\ninvalid Search Choice!!❌")
+        print("\nInvalid Search Choice!!❌")
 
 
-#DISPLAY ONE STUDENT
-#========================
+# DISPLAY ONE STUDENT
+# ========================
 def display_student(student):
     print("\n========== STUDENT ==========")
-
     print(f"ID: {student['student_id']}")
     print(f"Name: {student['name']}")
     print(f"Email: {student['email']}")
@@ -222,21 +195,21 @@ def display_student(student):
     print(f"Semester: {student['semester']}")
     print(f"CGPA: {student['CGPA']}")
 
-    if "marks" in student:
+    if "marks" in student and student["marks"]:
         print("----- Academic Result -----")
-
         for subject, marks in student["marks"].items():
             print(f"{subject}: {marks}")
 
         print(f"Total Marks: {student['total_marks']}/{student['maximum_marks']}")
-        print(f"Percentage: {student['percentage']:.2f}%")
+        perc = student.get("percentage")
+        print(f"Percentage: {perc:.2f}%" if perc is not None else "Percentage: N/A")
         print(f"Grade: {student['grade']}")
-
     else:
-        print("Academic Result: Not Available....❌3")
+        print("Academic Result: Not Available....❌")
 
-#DISPLAY STUDENTS LIST
-#===========================
+
+# DISPLAY STUDENTS LIST
+# ===========================
 def display_students_list(students):
     if not students:
         print("\nSTUDENT NOT FOUND!!!❌")
@@ -248,32 +221,30 @@ def display_students_list(students):
     print(f"\nTotal Students Found: {len(students)}")
 
 
-
-#DELETE STUDENTS
-#====================
-def delete_students(students):
+# DELETE STUDENTS
+# ====================
+def delete_students():
     student_id = input("Enter student id: ").strip()
-    for student in students:
-        if student["student_id"] == student_id:
+    student = db_get_student_by_id(student_id)
 
-            print ("Student Found : ")
-            display_student(student)
+    if student:
+        print("Student Found : ")
+        display_student(student)
 
-            confirm =input ("Do you want to delete student ? y/n").lower()
-            if confirm == "y":
-                (students.remove(student))
-                save_students(students)
+        confirm = input("Do you want to delete student ? (y/n): ").lower()
+        if confirm == "y":
+            db_delete_student(student_id)
+            print("Student Deleted Successfully!👏")
+        else:
+            print("\nDelete Cancelled.")
+    else:
+        print('\nStudent Not Found!!')
 
-                print ("Student Deleted Successfully!👏")
-
-            else:
-                print ("\nDelete Cancelled.")
-            return
-    print(f'\nStudent Not Found!!')
 
 # STATISTICS
 # ===============
-def statistics(students):
+def statistics():
+    students = db_get_all_students()
     if not students:
         print("\nNo Students Available.")
         return
@@ -301,51 +272,31 @@ def statistics(students):
     print(f"Total CGPA: {total_cgpa}")
     print(f"Average CGPA: {average_cgpa:.2f}")
 
-    print(
-        f"Highest CGPA: {highest_cgpa['CGPA']}   "
-        f"{highest_cgpa['name']}"
-    )
-
-    print(
-        f"Lowest CGPA: {lowest_cgpa['CGPA']}   "
-        f"{lowest_cgpa['name']}"
-    )
+    print(f"Highest CGPA: {highest_cgpa['CGPA']}   {highest_cgpa['name']}")
+    print(f"Lowest CGPA: {lowest_cgpa['CGPA']}   {lowest_cgpa['name']}")
 
     print("\n----------- Department Distribution -----------")
-
     for department, count in sorted(department_counts.items()):
         print(f"{department}: {count} student(s)")
 
     print("\n----------- Department Performance -----------")
-
     for department, count in sorted(department_counts.items()):
-        average_department_cgpa = (
-            department_cgpa[department] / count
-        )
-
-        print(
-            f"{department}: "
-            f"{average_department_cgpa:.2f} average CGPA"
-        )
+        avg_dept_cgpa = department_cgpa[department] / count
+        print(f"{department}: {avg_dept_cgpa:.2f} average CGPA")
 
     print("\n----------- Semester Distribution -----------")
-
     for semester, count in sorted(semester_counts.items()):
         print(f"Semester {semester}: {count} student(s)")
 
     print("\n----------- Academic Result Availability -----------")
-
     print(f"Students with results: {len(students_with_results)}")
     print(f"Students without results: {students_without_results}")
 
     if average_percentage is not None:
         print(f"\nAverage Percentage: {average_percentage:.2f}%")
-
         print("------- Grade Distribution -------")
-
         for grade, count in sorted(grade_counts.items()):
             print(f"{grade}: {count} student(s)")
-
     else:
         print("\nAverage Percentage: Not Available")
         print("Grade Distribution: Not Available")
@@ -353,7 +304,8 @@ def statistics(students):
 
 # STUDENT DASHBOARD
 # =========================
-def dashboard(students):
+def dashboard():
+    students = db_get_all_students()
     if not students:
         print("\nNo Students Available.")
         return
@@ -378,52 +330,25 @@ def dashboard(students):
     lowest_subject = summary["lowest_subject"]
     student_ranking = summary["student_ranking"]
 
-    passed_students = [
-        student for student in students_with_results
-        if student["percentage"] >= 50
-    ]
+    passed_students = [s for s in students_with_results if s["percentage"] >= 50]
+    failed_students = [s for s in students_with_results if s["percentage"] < 50]
+    pass_rate = (len(passed_students) / len(students_with_results)) * 100 if students_with_results else None
 
-    failed_students = [
-        student for student in students_with_results
-        if student["percentage"] < 50
-    ]
-    if students_with_results:
-        pass_rate = (len(passed_students) / len(students_with_results) ) * 100
-    else:
-        pass_rate = None
-
-    top_performers = sorted(
-        students_with_results,
-        key=lambda student: student["percentage"],
-        reverse=True
-    )[:3]
+    top_performers = sorted(students_with_results, key=lambda s: s["percentage"], reverse=True)[:3]
 
     best_department = max(
         department_cgpa,
-        key=lambda department:
-        department_cgpa[department] / department_counts[department]
+        key=lambda dept: department_cgpa[dept] / department_counts[dept]
     )
-
-    best_department_cgpa = (
-        department_cgpa[best_department]
-        / department_counts[best_department]
-    )
+    best_department_cgpa = department_cgpa[best_department] / department_counts[best_department]
 
     best_semester = max(
         semester_cgpa,
-        key=lambda semester:
-        semester_cgpa[semester] / semester_counts[semester]
+        key=lambda sem: semester_cgpa[sem] / semester_counts[sem]
     )
+    best_semester_cgpa = semester_cgpa[best_semester] / semester_counts[best_semester]
 
-    best_semester_cgpa = (
-        semester_cgpa[best_semester]
-        / semester_counts[best_semester]
-    )
-
-    at_risk_students = [
-        student for student in students_with_results
-        if student["percentage"] < 70
-    ]
+    at_risk_students = [s for s in students_with_results if s["percentage"] < 70]
 
     print("\n╔════════════════════════════════════════╗")
     print("║        STUDENT MANAGEMENT DASHBOARD    ║")
@@ -433,7 +358,6 @@ def dashboard(students):
     print(f"║ Highest CGPA       : {highest_cgpa['CGPA']:<15}║")
     print(f"║ Lowest CGPA        : {lowest_cgpa['CGPA']:<15}║")
     print("╠════════════════════════════════════════╣")
-
     print("║ Departments                             ║")
 
     for department, count in sorted(department_counts.items()):
@@ -441,79 +365,41 @@ def dashboard(students):
 
     print("╠════════════════════════════════════════╗")
     print("║ Performance Leaders                    ║")
-    print(
-        f"║ Best Department : {best_department:<15}║"
-    )
-    print(
-        f"║ Average CGPA    : {best_department_cgpa:<15.2f}║"
-    )
-    print(
-        f"║ Best Semester   : Semester {best_semester:<7}║"
-    )
-    print(
-        f"║ Average CGPA    : {best_semester_cgpa:<15.2f}║"
-    )
+    print(f"║ Best Department : {best_department:<15}║")
+    print(f"║ Average CGPA    : {best_department_cgpa:<15.2f}║")
+    print(f"║ Best Semester   : Semester {best_semester:<7}║")
+    print(f"║ Average CGPA    : {best_semester_cgpa:<15.2f}║")
 
     print("╠════════════════════════════════════════╣")
     print("║ Department Performance                 ║")
-
     for department, count in sorted(department_counts.items()):
-        average_department_cgpa = (
-            department_cgpa[department] / count
-        )
-
-        print(
-            f"║ {department:<20}: "
-            f"{average_department_cgpa:.2f} CGPA   ║"
-        )
+        avg_dept_cgpa = department_cgpa[department] / count
+        print(f"║ {department:<20}: {avg_dept_cgpa:.2f} CGPA   ║")
 
     print("║ Semesters                               ║")
-
     for semester, count in sorted(semester_counts.items()):
         print(f"║ Semester {semester:<11}: {count:<12}║")
 
-
     print("╠════════════════════════════════════════╗")
     print("║ Semester Performance                  ║")
-
     for semester, count in sorted(semester_counts.items()):
-        average_semester_cgpa = (
-            semester_cgpa[semester] / count
-        )
+        avg_sem_cgpa = semester_cgpa[semester] / count
+        print(f"║ Semester {semester:<11}: {avg_sem_cgpa:.2f} CGPA   ║")
 
-        print(
-            f"║ Semester {semester:<11}: "
-            f"{average_semester_cgpa:.2f} CGPA   ║"
-        )
     print("╠════════════════════════════════════════╗")
     print("║ Subject Performance                    ║")
-
     for subject, average in sorted(subject_averages.items()):
-        print(
-            f"║ {subject:<20}: "
-            f"{average:.2f} average marks ║"
-        )
+        print(f"║ {subject:<20}: {average:.2f} average marks ║")
 
     print("╠════════════════════════════════════════╗")
     print("║ Subject Insights                       ║")
-
     if highest_subject:
-        print(
-            f"║ Best Subject    : {highest_subject:<20}║"
-        )
-        print(
-            f"║ Average Marks   : "
-            f"{subject_averages[highest_subject]:.2f}             ║"
-        )
+        print(f"║ Best Subject    : {highest_subject:<20}║")
+        print(f"║ Average Marks   : {subject_averages[highest_subject]:.2f}             ║")
 
     if lowest_subject:
-        print(
-            f"║ Weakest Subject : {lowest_subject:<20}║"
-        )
-        print(
-            f"║ Average Marks   : "
-            f"{subject_averages[lowest_subject]:.2f}             ║"
-        )
+        print(f"║ Weakest Subject : {lowest_subject:<20}║")
+        print(f"║ Average Marks   : {subject_averages[lowest_subject]:.2f}             ║")
 
     print("╠════════════════════════════════════════╣")
     print("║ Results Overview                       ║")
@@ -531,24 +417,17 @@ def dashboard(students):
         print("║ Pass Rate        : Not Available     ║")
 
     print("╠════════════════════════════════════════╣")
-
     average_percentage = summary["average_percentage"]
-
-    print("╠════════════════════════════════════════╗")
     print("║ Academic Insight                       ║")
     print(f"║ Average CGPA       : {average_cgpa:<14.2f}║")
 
     if average_percentage is not None:
-        print(
-            f"║ Average Percentage : "
-            f"{average_percentage:<14.2f}%║"
-        )
+        print(f"║ Average Percentage : {average_percentage:<14.2f}%║")
     else:
         print("║ Average Percentage : Not Available    ║")
 
     print("╠════════════════════════════════════════╣")
     print("║ Top Performers                         ║")
-
     if top_performers:
         for index, student in enumerate(top_performers, start=1):
             print(
@@ -557,32 +436,20 @@ def dashboard(students):
                 f"CGPA: {student['CGPA']:.2f}  "
                 f"{student['grade']:<3} ║"
             )
-
     else:
         print("║ No Results Available                  ║")
 
     print("╠════════════════════════════════════════╣")
     print("║ Grade Distribution                     ║")
-
     if grade_counts:
         for grade, count in sorted(grade_counts.items()):
             print(f"║ Grade {grade:<10}: {count:<15}║")
     else:
         print("║ No Grades Available                   ║")
 
-    excellent = 0
-    good = 0
-    needs_improvement = 0
-
-    for student in students_with_results:
-        percentage = student["percentage"]
-
-        if percentage >= 85:
-            excellent += 1
-        elif percentage >= 70:
-            good += 1
-        else:
-            needs_improvement += 1
+    excellent = sum(1 for s in students_with_results if s["percentage"] >= 85)
+    good = sum(1 for s in students_with_results if 70 <= s["percentage"] < 85)
+    needs_improvement = sum(1 for s in students_with_results if s["percentage"] < 70)
 
     print("╠════════════════════════════════════════╗")
     print("║ At-Risk Students                       ║")
@@ -605,18 +472,18 @@ def dashboard(students):
 
     print("╠════════════════════════════════════════╗")
     print("║ Top Students                           ║")
-
     for rank, student in enumerate(student_ranking[:5], start=1):
         print(
             f"║ {rank}. {student['name']:<18} "
             f"{student.get('percentage', 0):>6.2f}% ║"
         )
-
     print("╚════════════════════════════════════════╝")
+
 
 # EXPORT STUDENT REPORT
 # =========================
-def export_student_report(students):
+def export_student_report():
+    students = db_get_all_students()
     if not students:
         print("\nNo Students Available to Export. ❌")
         return
@@ -630,178 +497,135 @@ def export_student_report(students):
 
     if choice == "1":
         export_students_csv(students)
-
     elif choice == "2":
         export_students_excel(students)
-
     elif choice == "3":
         return
-
     else:
         print("\nInvalid export choice! ❌")
 
-#UPDATE STUDENTS
-#==================
-def update_students(students):
+
+# UPDATE STUDENTS
+# ==================
+def update_students():
     student_id = get_student_id()
-    for student in students:
+    student = db_get_student_by_id(student_id)
 
-        if student["student_id"] == student_id:
+    if not student:
+        print('\nStudent Not Found!!')
+        return
 
-            print ("\nSTUDENT FOUND....✅")
-            print ("ENTER NEW INFORMATION.....")
+    students = db_get_all_students()
+    print("\nSTUDENT FOUND....✅")
+    print("ENTER NEW INFORMATION.....")
 
-            student["name"] = get_name()
-            student["department"] = get_department()
+    name = get_name()
+    department = get_department()
+    email = get_email()
 
-            email = get_email()
+    for other_student in students:
+        if other_student["student_id"] != student_id:
+            if other_student["email"].lower() == email.lower():
+                print("EMAIL ALREADY EXISTS !!...❌")
+                return
 
-            for other_student in students:
-                if other_student is not student:
-                    if other_student["email"].lower() == email.lower():
-                        print("EMAIL ALREADY EXISTS !!...❌")
-                        return
+    phone = get_phone()
+    for other_student in students:
+        if other_student["student_id"] != student_id:
+            if other_student["phone"] == phone:
+                print("PHONE NUMBER ALREADY EXISTS !!...❌")
+                return
 
-            student["email"] = email
+    semester = get_semester()
+    cgpa = get_cgpa()
+    marks = get_subject_marks(department)
+    total_marks, maximum_marks, percentage, grade = calculate_result(marks)
 
-            phone = get_phone()
+    updated_student = {
+        "student_id": student_id,
+        "name": name,
+        "department": department,
+        "email": email,
+        "phone": phone,
+        "semester": semester,
+        "CGPA": cgpa,
+        "marks": marks,
+        "total_marks": total_marks,
+        "maximum_marks": maximum_marks,
+        "percentage": percentage,
+        "grade": grade
+    }
 
-            for other_student in students:
-                if other_student is not student:
-                    if other_student["phone"] == phone:
-                        print("PHONE NUMBER ALREADY EXISTS !!...❌")
-                        return
+    db_update_student(updated_student)
+    print("STUDENT UPDATED SUCCESSFULLY !! ✅")
 
-            student["phone"] = phone
 
-            student["semester"] = get_semester()
-            student["CGPA"] = get_cgpa()
-            marks = get_subject_marks()
-            total_marks, maximum_marks, percentage, grade = calculate_result(marks)
-
-            student["marks"] = marks
-            student["total_marks"] = total_marks
-            student["maximum_marks"] = maximum_marks
-            student["percentage"] = percentage
-            student["grade"] = grade
-
-            save_students(students)
-
-            print ("STUDENT UPDATED SUCCESSFULLY !!")
-
-            return
-
-    print(f'\nStudent Not Found!!')
-
-#SORT STUDENTS BY CGPA
-#==========================
+# SORT STUDENTS BY CGPA
+# ==========================
 def sort_by_cgpa(students, order):
-
     if not students:
         print("\nNo Students Available.")
         return
 
-    if order == "1":
-        reverse = True
-    else:
-        reverse = False
-
-    sorted_students = sorted(
-        students,
-        key=lambda student: student["CGPA"],
-        reverse=reverse
-    )
+    reverse = True if order == "1" else False
+    sorted_students = sorted(students, key=lambda s: s["CGPA"], reverse=reverse)
 
     print("\n========= STUDENTS BY CGPA =========")
-
     for student in sorted_students:
-        print(f"{student['name']} -> "
-              f"{student['CGPA']} CGPA")
+        print(f"{student['name']} -> {student['CGPA']} CGPA")
 
-#SORTING BY NAME
-#======================
+
+# SORTING BY NAME
+# ======================
 def sort_by_name(students, order):
     if not students:
         print("\nNo Students Available.")
         return
 
-    if order == "1":
-        reverse = False
-    else:
-        reverse = True
-
-    sorted_students = sorted(
-        students,
-        key=lambda student: student["name"].lower(),
-        reverse=reverse
-    )
+    reverse = False if order == "1" else True
+    sorted_students = sorted(students, key=lambda s: s["name"].lower(), reverse=reverse)
 
     print("\n========= STUDENTS BY NAME =========")
-
     for student in sorted_students:
-        print(f"{student['name']} -> "
-              f"{student['CGPA']} CGPA")
+        print(f"{student['name']} -> {student['CGPA']} CGPA")
 
-#SORTING BY SEMESTER
-#========================
+
+# SORTING BY SEMESTER
+# ========================
 def sort_by_semester(students, order):
     if not students:
         print("\nNo Students Available.")
         return
 
-    if order == "1":
-        reverse = True
-    else:
-        reverse = False
-
-    sorted_students = sorted(
-        students,
-        key=lambda student: student["semester"],
-        reverse=reverse
-    )
+    reverse = True if order == "1" else False
+    sorted_students = sorted(students, key=lambda s: s["semester"], reverse=reverse)
 
     print("\n========= STUDENTS BY SEMESTER =========")
-
     for student in sorted_students:
-        print(f"{student['name']} -> "
-              f"Semester {student['semester']}")
+        print(f"{student['name']} -> Semester {student['semester']}")
 
-#SORTING BY PERCENTAGE
-#=============================
+
+# SORTING BY PERCENTAGE
+# =============================
 def sort_by_percentage(students, order):
-    students_with_results = [
-        student for student in students
-        if "percentage" in student
-    ]
+    students_with_results = [s for s in students if s.get("percentage") is not None]
 
     if not students_with_results:
         print("\nNo Student Results Available.")
         return
 
-    if order == "1":
-        reverse = True
-    else:
-        reverse = False
-
-    sorted_students = sorted(
-        students_with_results,
-        key=lambda student: student["percentage"],
-        reverse=reverse
-    )
+    reverse = True if order == "1" else False
+    sorted_students = sorted(students_with_results, key=lambda s: s["percentage"], reverse=reverse)
 
     print("\n========= STUDENTS BY PERCENTAGE =========")
-
     for student in sorted_students:
-        print(
-            f"{student['name']} -> "
-            f"{student['percentage']:.2f}% "
-            f"({student['grade']})"
-        )
+        print(f"{student['name']} -> {student['percentage']:.2f}% ({student['grade']})")
 
 
-#SORTING STUDENTS
-#=====================
-def sort_students(students):
+# SORTING STUDENTS
+# =====================
+def sort_students():
+    students = db_get_all_students()
     if not students:
         print("\nNo Students Available.")
         return
@@ -819,35 +643,15 @@ def sort_students(students):
 
         if choice == "1":
             sort_by_cgpa(students, order)
-
         elif choice == "2":
             sort_by_name(students, order)
-
         elif choice == "3":
             sort_by_semester(students, order)
-
         elif choice == "4":
             sort_by_percentage(students, order)
-
     else:
         print("\nInvalid sorting choice! ❌")
 
-
-#GET MARKS FOR SUBJECT
-#========================
-def get_subject_marks():
-    subjects=[
-        "Python",
-        "DBMS",
-        "Statistics",
-        "Mathematics",
-        "Calculus",
-        "DLD"
-    ]
-    marks={}
-    for subject in subjects:
-        marks[subject]=get_marks(subject)
-    return marks
 
 # RESTORE STUDENT DATA
 # =========================
@@ -859,103 +663,75 @@ def restore_student_data():
         return
 
     print("\n========== AVAILABLE BACKUPS ==========")
-
     for index, backup in enumerate(backups, start=1):
         print(f"{index}. {backup}")
 
     choice = get_backup_choice(backups)
-
     selected_backup = backups[choice]
 
     print(f"\nSelected Backup: {selected_backup}")
 
-    confirmation = input(
-        "Are you sure you want to restore this backup? (y/n): "
-    ).strip().lower()
+    confirmation = input("Are you sure you want to restore this backup? (y/n): ").strip().lower()
 
     if confirmation == "y":
         restore_students(selected_backup)
+        print("\nReloading restored students data... 🔄")
     else:
         print("\nRestore Cancelled. ❌")
 
+
 # STUDENT PERFORMANCE REPORT
 # =========================
-def student_performance_report(students):
-
+def student_performance_report():
+    students = db_get_all_students()
     if not students:
         print("\nNo Students Available.")
         return
 
     student_id = get_student_id()
+    student = db_get_student_by_id(student_id)
 
-    for student in students:
+    if student:
+        report = get_student_performance_report(student)
 
-        if student["student_id"] == student_id:
+        print("\n╔════════════════════════════════════════╗")
+        print("║       STUDENT PERFORMANCE REPORT       ║")
+        print("╠════════════════════════════════════════╣")
 
-            report = get_student_performance_report(student)
+        print(f"║ ID         : {report['student_id']:<23}║")
+        print(f"║ Name       : {report['name']:<23}║")
+        print(f"║ Department : {report['department']:<23}║")
+        print(f"║ Semester   : {report['semester']:<23}║")
+        print(f"║ CGPA       : {report['CGPA']:<23}║")
 
-            print("\n╔════════════════════════════════════════╗")
-            print("║       STUDENT PERFORMANCE REPORT       ║")
-            print("╠════════════════════════════════════════╣")
+        print("╠════════════════════════════════════════╣")
+        print("║ Academic Result                        ║")
 
-            print(f"║ ID         : {report['student_id']:<23}║")
-            print(f"║ Name       : {report['name']:<23}║")
-            print(f"║ Department : {report['department']:<23}║")
-            print(f"║ Semester   : {report['semester']:<23}║")
-            print(f"║ CGPA       : {report['CGPA']:<23}║")
+        if report.get("marks"):
+            for subject, marks in report["marks"].items():
+                print(f"║ {subject:<15}: {marks:<15}║")
 
-            print("╠════════════════════════════════════════╣")
-            print("║ Academic Result                        ║")
+            print(f"║ Total Marks: {report['total_marks']}/{report['maximum_marks']:<10}║")
+            print(f"║ Percentage : {report['percentage']:<15.2f}%║")
+            print(f"║ Grade      : {report['grade']:<23}║")
+            print(f"║ Status     : {report['status']:<23}║")
+            print(f"║ Performance: {report['performance_level']:<23}║")
+        else:
+            print("║ Academic Result: Not Available         ║")
 
-            if report["marks"]:
+        print("╚════════════════════════════════════════╝")
 
-                for subject, marks in report["marks"].items():
-                    print(f"║ {subject:<15}: {marks:<15}║")
+        print("\n1. Export Report as PDF")
+        print("2. Back")
 
-                print(
-                    f"║ Total Marks: "
-                    f"{report['total_marks']}/{report['maximum_marks']:<10}║"
-                )
+        choice = input("Enter your choice: ").strip()
 
-                print(
-                    f"║ Percentage : "
-                    f"{report['percentage']:<15.2f}%║"
-                )
-
-                print(
-                    f"║ Grade      : "
-                    f"{report['grade']:<23}║"
-                )
-
-                print(
-                    f"║ Status     : "
-                    f"{report['status']:<23}║"
-                )
-
-                print(
-                    f"║ Performance: "
-                    f"{report['performance_level']:<23}║"
-                )
-
-            else:
-                print("║ Academic Result: Not Available         ║")
-
-            print("╚════════════════════════════════════════╝")
-
-            print("\n1. Export Report as PDF")
-            print("2. Back")
-
-            choice = input("Enter your choice: ").strip()
-
-            if choice == "1":
-                export_student_performance_pdf(report)
-
-            elif choice == "2":
-                return
-
-            else:
-                print("\nInvalid choice! ❌")
-
+        if choice == "1":
+            export_student_performance_pdf(report)
+        elif choice == "2":
             return
+        else:
+            print("\nInvalid choice! ❌")
+        return
 
     print("\nStudent Not Found! ❌")

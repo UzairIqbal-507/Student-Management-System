@@ -58,7 +58,7 @@ def main ():
             sort_students(students)
 
         elif choice == 8:
-            restore_student_data()
+            students = restore_student_data()
 
         elif choice == 9:
             dashboard(students)

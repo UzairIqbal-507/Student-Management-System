@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Students</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <a href="/" class="btn btn-secondary mb-3">⬅️ Back to Directory</a>
+        <div class="card shadow border-0 mb-4">
+            <div class="card-body">
+                <form method="GET" action="/search" class="row g-3">
+                    <div class="col-md-3">
+                        <select name="search_by" class="form-select">
+                            <option value="all" {% if search_by == 'all' %}selected{% endif %}>Search All</option>
+                            <option value="id" {% if search_by == 'id' %}selected{% endif %}>By ID</option>
+                            <option value="name" {% if search_by == 'name' %}selected{% endif %}>By Name</option>
+                            <option value="department" {% if search_by == 'department' %}selected{% endif %}>By Department</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <input type="text" name="query" class="form-control" placeholder="Type keyword to search..." value="{{ query }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Semester</th>
+                            <th>CGPA</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.department }}</td>
+                            <td>{{ student.semester }}</td>
+                            <td>{{ student.CGPA }}</td>
+                            <td>{{ student.grade }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No matching records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

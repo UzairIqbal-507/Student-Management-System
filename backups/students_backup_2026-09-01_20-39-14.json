@@ -1,0 +1,155 @@
+[
+    {
+        "student_id": "1",
+        "name": "uzair",
+        "department": "Data Science",
+        "semester": 3,
+        "CGPA": 3.57,
+        "email": "uzair@gmail.com",
+        "phone": "03000000000",
+        "marks": {
+            "Python": 89.0,
+            "DBMS": 87.0,
+            "Statistics": 99.0,
+            "Mathematics": 100.0,
+            "Calculus": 80.0,
+            "DLD": 92.0
+        },
+        "total_marks": 547.0,
+        "maximum_marks": 600,
+        "percentage": 91.16666666666666,
+        "grade": "A+"
+    },
+    {
+        "student_id": "2",
+        "name": "rehan",
+        "department": "Computer Science",
+        "semester": 4,
+        "CGPA": 3.38,
+        "email": "rehan@gmail.com",
+        "phone": "03000000001",
+        "marks": {
+            "Python": 77.0,
+            "DBMS": 88.0,
+            "Statistics": 78.0,
+            "Mathematics": 89.0,
+            "Calculus": 67.0,
+            "DLD": 88.0
+        },
+        "total_marks": 487.0,
+        "maximum_marks": 600,
+        "percentage": 81.16666666666667,
+        "grade": "A"
+    },
+    {
+        "student_id": "3",
+        "name": "ayan",
+        "department": "Software Engineering",
+        "semester": 5,
+        "CGPA": 3.95,
+        "email": "ayan@gmail.com",
+        "phone": "03000000002"
+    },
+    {
+        "student_id": "4",
+        "name": "ali",
+        "email": "ali@gmail.com",
+        "phone": "03000000003",
+        "department": "Information Technology",
+        "semester": 6,
+        "CGPA": 3.42
+    },
+    {
+        "student_id": "5",
+        "name": "ukasha",
+        "email": "ukasha@gmail.com",
+        "phone": "03000000004",
+        "department": "Data Science",
+        "semester": 3,
+        "CGPA": 3.62
+    },
+    {
+        "student_id": "6",
+        "name": "muzammil",
+        "email": "muzammil@gmail.com",
+        "phone": "03000000005",
+        "department": "Information Technology",
+        "semester": 3,
+        "CGPA": 3.04,
+        "marks": {
+            "Python": 67.0,
+            "DBMS": 56.0,
+            "Statistics": 88.0,
+            "Mathematics": 66.0,
+            "Calculus": 55.0,
+            "DLD": 89.0
+        },
+        "total_marks": 421.0,
+        "maximum_marks": 600,
+        "percentage": 70.16666666666667,
+        "grade": "B"
+    },
+    {
+        "student_id": "7",
+        "name": "abdul",
+        "email": "abdul@gmail.com",
+        "phone": "03000000006",
+        "department": "Computer Science",
+        "semester": 4,
+        "CGPA": 3.44,
+        "marks": {
+            "Python": 77.0,
+            "DBMS": 87.0,
+            "Statistics": 67.0,
+            "Mathematics": 97.0,
+            "Calculus": 56.0,
+            "DLD": 78.0
+        },
+        "total_marks": 462.0,
+        "maximum_marks": 600,
+        "percentage": 77.0,
+        "grade": "B"
+    },
+    {
+        "student_id": "8",
+        "name": "sameer",
+        "email": "sameer@gmail.com",
+        "phone": "03000000007",
+        "department": "Data Science",
+        "semester": 3,
+        "CGPA": 3.64,
+        "marks": {
+            "Python": 88.0,
+            "DBMS": 78.0,
+            "Statistics": 77.0,
+            "Mathematics": 67.0,
+            "Calculus": 76.0,
+            "DLD": 56.0
+        },
+        "total_marks": 442.0,
+        "maximum_marks": 600,
+        "percentage": 73.66666666666667,
+        "grade": "B"
+    },
+    {
+        "student_id": "9",
+        "name": "moiz",
+        "email": "moiz@gmail.com",
+        "phone": "03000000008",
+        "department": "Computer Science",
+        "semester": 4,
+        "CGPA": 3.77,
+        "marks": {
+            "Python": 88.0,
+            "DBMS": 77.0,
+            "Statistics": 76.0,
+            "Mathematics": 67.0,
+            "Calculus": 87.0,
+            "DLD": 66.0
+        },
+        "total_marks": 461.0,
+        "maximum_marks": 600,
+        "percentage": 76.83333333333333,
+        "grade": "B"
+    }
+]

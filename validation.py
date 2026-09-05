@@ -22,14 +22,15 @@ def get_name():
 
 #GET EMAIL OF STUDENT
 #=========================
+import re
+
 def get_email():
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     while True:
         email = input("Enter Email: ").strip()
-
-        if "@" in email and "." in email:
+        if re.match(pattern, email):
             return email
-
-        print("Invalid email! Please enter a valid email.")
+        print("Invalid email format! Please try again.")
 
 #GET PHONE OF STUDENT
 #=========================
@@ -169,7 +170,7 @@ def get_student_id():
 #=========================
 def get_search_choice():
     while True:
-        choice = input("Enter choice (1-6): ").strip()
+        choice = input("Enter choice (1-7): ").strip()
 
         if choice in ("1", "2", "3", "4","5","6","7"):
             return choice

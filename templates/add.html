@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h4 class="mb-0">➕ Add New Student</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST">
+                            <h5 class="text-secondary border-bottom pb-2">Basic Info</h5>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Student ID</label>
+                                    <input type="text" name="student_id" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" name="name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" name="phone" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Department</label>
+                                    <select name="department" class="form-select" required>
+                                        <option value="Data Science">Data Science</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Software Engineering">Software Engineering</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Semester (1-8)</label>
+                                    <input type="number" name="semester" min="1" max="8" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">CGPA (0-4.0)</label>
+                                    <input type="number" step="0.01" name="cgpa" min="0" max="4" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <h5 class="text-secondary border-bottom pb-2 mt-4">Subject Marks (0-100)</h5>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4"><label>Python</label><input type="number" name="python" min="0" max="100" class="form-control" required></div>
+                                <div class="col-md-4"><label>DBMS</label><input type="number" name="dbms" min="0" max="100" class="form-control" required></div>
+                                <div class="col-md-4"><label>Statistics</label><input type="number" name="statistics" min="0" max="100" class="form-control" required></div>
+                                <div class="col-md-4"><label>Mathematics</label><input type="number" name="math" min="0" max="100" class="form-control" required></div>
+                                <div class="col-md-4"><label>Calculus</label><input type="number" name="calculus" min="0" max="100" class="form-control" required></div>
+                                <div class="col-md-4"><label>DLD</label><input type="number" name="dld" min="0" max="100" class="form-control" required></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="/" class="btn btn-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-success px-4">Save Student</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
