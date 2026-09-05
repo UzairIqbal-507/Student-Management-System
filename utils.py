@@ -1,6 +1,8 @@
 import json
 import os
 import csv
+import pandas as pd
+import json
 from datetime import datetime
 from openpyxl import Workbook
 
@@ -411,3 +413,68 @@ def export_student_performance_pdf(report):
 
     except Exception as e:
         print(f"\nError generating PDF: {e} ❌")
+
+
+#export to excel
+#=========================
+def export_students_to_excel(students, filepath="reports/students_data.xlsx"):
+    if not students:
+        return None
+
+    # Data formatting for Excel
+    export_data = []
+    for s in students:
+        row = {
+            "Student ID": s.get("student_id"),
+            "Name": s.get("name"),
+            "Email": s.get("email"),
+            "Phone": s.get("phone"),
+            "Department": s.get("department"),
+            "Semester": s.get("semester"),
+            "CGPA": s.get("CGPA"),
+            "Percentage": s.get("percentage"),
+            "Grade": s.get("grade"),
+            "Marks JSON": json.dumps(s.get("marks", {}))
+        }
+        export_data.append(row)
+
+    df = pd.DataFrame(export_data)
+    df.to_excel(filepath, index=False)
+    return filepath
+
+#import to excel
+#==============================
+def import_students_from_excel(file_stream):
+    # Reads uploaded Excel/CSV file into a DataFrame
+    try:
+        if file_stream.filename.endswith('.csv'):
+            df = pd.read_csv(file_stream)
+        else:
+            df = pd.read_excel(file_stream)
+
+        imported_students = []
+        for _, row in df.iterrows():
+            marks_raw = row.get("Marks JSON", "{}")
+            if isinstance(marks_raw, str):
+                try:
+                    marks = json.loads(marks_raw)
+                except:
+                    marks = {}
+            else:
+                marks = {}
+
+            student = {
+                "student_id": str(row["Student ID"]),
+                "name": str(row["Name"]),
+                "email": str(row["Email"]),
+                "phone": str(row["Phone"]),
+                "department": str(row["Department"]),
+                "semester": int(row["Semester"]),
+                "CGPA": float(row["CGPA"]),
+                "marks": marks
+            }
+            imported_students.append(student)
+
+        return imported_students, None
+    except Exception as e:
+        return [], str(e)

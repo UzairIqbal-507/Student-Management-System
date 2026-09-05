@@ -14,7 +14,9 @@ from database import (
 from utils import (
     get_academic_summary,
     get_student_performance_report,
-    export_student_performance_pdf
+    export_student_performance_pdf,
+    export_students_to_excel,
+    import_students_from_excel
 )
 from validation import calculate_result
 
@@ -79,7 +81,7 @@ def register():
             flash("Account registered successfully! Please log in. ✅", "success")
             return redirect(url_for("login"))
         else:
-            flash(f"Registration failed: Username or Email might exist! ❌", "danger")
+            flash("Registration failed: Username or Email might exist! ❌", "danger")
 
     return render_template("register.html")
 
@@ -95,7 +97,6 @@ def logout():
 def index():
     user_role = session["user"]["role"]
     if user_role == "student" and session["user"].get("student_id"):
-        # Students see only their own record
         student = db_get_student_by_id(session["user"]["student_id"])
         students = [student] if student else []
     else:
@@ -116,7 +117,6 @@ def add_student():
                 flash("Student ID already exists! ❌", "danger")
                 return redirect(url_for("add_student"))
 
-        # DYNAMIC MARKS EXTRACTION (Form se saare 'marks[SubjectName]' keys pick karega)
         marks = {}
         for key in request.form:
             if key.startswith("marks[") and key.endswith("]"):
@@ -124,7 +124,6 @@ def add_student():
                 val = request.form.get(key, 0)
                 marks[subject_name] = float(val) if val else 0.0
 
-        # Agar dynamic format nah mila toh fallback standard fields se uthayega
         if not marks:
             default_subjects = ["Python", "DBMS", "Statistics", "Mathematics", "Calculus", "DLD"]
             for sub in default_subjects:
@@ -173,7 +172,6 @@ def update_student(student_id):
         target_student["semester"] = int(request.form.get("semester"))
         target_student["CGPA"] = float(request.form.get("cgpa"))
 
-        # Dynamic Marks Extraction
         marks = {}
         for key in request.form:
             if key.startswith("marks[") and key.endswith("]"):
@@ -287,6 +285,53 @@ def generate_pdf(student_id):
     files = [os.path.join(reports_dir, f) for f in os.listdir(reports_dir) if f.startswith(student_id)]
     latest_file = max(files, key=os.path.getctime)
     return send_file(latest_file, as_attachment=True)
+
+# 8. EXPORT TO EXCEL (NEW)
+@app.route("/export/excel")
+@admin_required
+def export_excel():
+    students = db_get_all_students()
+    if not students:
+        flash("No student records found to export! ❌", "warning")
+        return redirect(url_for("index"))
+
+    filepath = export_students_to_excel(students)
+    return send_file(filepath, as_attachment=True, download_name="Students_List.xlsx")
+
+# 9. BULK IMPORT FROM EXCEL/CSV (NEW)
+@app.route("/import/excel", methods=["POST"])
+@admin_required
+def import_excel():
+    if "file" not in request.files:
+        flash("No file uploaded! ❌", "danger")
+        return redirect(url_for("index"))
+
+    file = request.files["file"]
+    if file.filename == "":
+        flash("No file selected! ❌", "warning")
+        return redirect(url_for("index"))
+
+    imported_students, error = import_students_from_excel(file)
+    if error:
+        flash(f"Failed to process file: {error} ❌", "danger")
+        return redirect(url_for("index"))
+
+    success_count = 0
+    for student in imported_students:
+        total_marks, max_marks, pct, grade = calculate_result(student.get("marks", {}))
+        student["total_marks"] = total_marks
+        student["maximum_marks"] = max_marks
+        student["percentage"] = pct
+        student["grade"] = grade
+
+        try:
+            db_add_student(student)
+            success_count += 1
+        except Exception:
+            pass
+
+    flash(f"Successfully imported {success_count} students! 🎉", "success")
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run(debug=True)
