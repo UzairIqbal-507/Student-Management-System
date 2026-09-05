@@ -1,162 +1,178 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Dashboard & Analytics</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-light">
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-primary m-0">📊 Student Analytics Dashboard</h2>
-            <a href="/" class="btn btn-secondary">⬅️ Back to Directory</a>
-        </div>
+{% extends "layout.html" %}
 
-        {% if summary %}
-        <!-- Summary Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white p-3 text-center shadow-sm border-0">
-                    <h6 class="text-uppercase small">Total Students</h6>
-                    <h2 class="fw-bold m-0">{{ summary.total_students }}</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white p-3 text-center shadow-sm border-0">
-                    <h6 class="text-uppercase small">Average CGPA</h6>
-                    <h2 class="fw-bold m-0">{{ "%.2f"|format(summary.average_cgpa) }}</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white p-3 text-center shadow-sm border-0">
-                    <h6 class="text-uppercase small">Avg Percentage</h6>
-                    <h2 class="fw-bold m-0">{{ "%.2f"|format(summary.average_percentage) if summary.average_percentage else 'N/A' }}%</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-dark p-3 text-center shadow-sm border-0">
-                    <h6 class="text-uppercase small">Highest CGPA</h6>
-                    <h2 class="fw-bold m-0">{{ summary.highest_cgpa.CGPA if summary.highest_cgpa else 'N/A' }}</h2>
-                </div>
-            </div>
-        </div>
+{% block title %}Analytics Dashboard - EduPulse Pro{% endblock %}
 
-        <!-- Interactive Visual Charts Row 1 -->
-        <div class="row g-4 mb-4">
-            <!-- Department Distribution Chart -->
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white py-3 fw-bold text-secondary">
-                        🏫 Department Wise Student Enrollment
-                    </div>
-                    <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height:320px;">
-                        <canvas id="deptChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Grade Distribution Chart -->
-            <div class="col-md-6">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white py-3 fw-bold text-secondary">
-                        🎯 Grade Distribution Summary
-                    </div>
-                    <div class="card-body d-flex justify-content-center align-items-center" style="position: relative; height:320px;">
-                        <canvas id="gradeChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Interactive Visual Charts Row 2 -->
-        <div class="row mb-4">
-            <!-- Subject Average Performance Bar Chart -->
-            <div class="col-md-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white py-3 fw-bold text-secondary">
-                        📚 Subject-Wise Average Marks Comparison
-                    </div>
-                    <div class="card-body" style="position: relative; height:350px;">
-                        <canvas id="subjectChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chart.js Script Logic -->
-        <script>
-            // Parse data passed from Flask
-            const chartData = {{ chart_data | tojson }};
-
-            // 1. Department Doughnut Chart
-            new Chart(document.getElementById('deptChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: chartData.departments,
-                    datasets: [{
-                        label: 'Students Count',
-                        data: chartData.department_counts,
-                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#6c757d'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-
-            // 2. Grade Bar Chart
-            new Chart(document.getElementById('gradeChart'), {
-                type: 'bar',
-                data: {
-                    labels: chartData.grades,
-                    datasets: [{
-                        label: 'Number of Students',
-                        data: chartData.grade_counts,
-                        backgroundColor: '#198754',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-
-            // 3. Subject Averages Horizontal Bar Chart
-            new Chart(document.getElementById('subjectChart'), {
-                type: 'bar',
-                data: {
-                    labels: chartData.subjects,
-                    datasets: [{
-                        label: 'Average Marks (Out of 100)',
-                        data: chartData.subject_averages,
-                        backgroundColor: '#0d6efd',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, max: 100 } },
-                    plugins: { legend: { position: 'top' } }
-                }
-            });
-        </script>
-
-        {% else %}
-        <div class="alert alert-info text-center">
-            No student records available to display graphical analytics.
-        </div>
-        {% endif %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Academic Analytics Dashboard</h2>
+        <p class="text-muted m-0">Real-time statistics, distributions, and performance insights.</p>
     </div>
-</body>
-</html>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-light rounded-3">
+        <i class="fa-solid fa-arrow-left me-1"></i> Back to Directory
+    </a>
+</div>
+
+{% if summary %}
+<!-- Top Metrics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-primary bg-opacity-20 text-primary rounded-3 fs-3">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <div class="text-muted small">Total Students</div>
+                <h3 class="fw-bold m-0">{{ summary.total_students }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-success bg-opacity-20 text-success rounded-3 fs-3">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <div class="text-muted small">Average CGPA</div>
+                <h3 class="fw-bold m-0">{{ summary.average_cgpa }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-info bg-opacity-20 text-info rounded-3 fs-3">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div>
+                <div class="text-muted small">Departments</div>
+                <h3 class="fw-bold m-0">{{ summary.department_counts | length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-warning bg-opacity-20 text-warning rounded-3 fs-3">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+                <div class="text-muted small">Grade Tiers</div>
+                <h3 class="fw-bold m-0">{{ summary.grade_counts | length }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+    <!-- Department Distribution Pie Chart -->
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Department Distribution</h5>
+            <div style="max-height: 280px; position: relative;" class="d-flex justify-content-center">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Performance Bar Chart -->
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-column me-2 text-success"></i>Grade Distribution</h5>
+            <div style="max-height: 280px; position: relative;">
+                <canvas id="gradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Performance Average Chart -->
+<div class="glass-card p-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-book-open me-2 text-info"></i>Subject Performance Averages</h5>
+    <div style="max-height: 300px; position: relative;">
+        <canvas id="subjectChart"></canvas>
+    </div>
+</div>
+
+{% else %}
+<div class="glass-card p-5 text-center text-muted">
+    <i class="fa-solid fa-chart-line fs-1 mb-3"></i>
+    <h4>No Data Available For Analytics</h4>
+    <p>Please add student records to populate chart insights.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% if summary %}
+<script>
+    const chartData = {{ chart_data | tojson | safe }};
+
+    // Global Chart Configs for Dark Mode Styling
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
+    // 1. Department Chart (Pie)
+    new Chart(document.getElementById('deptChart'), {
+        type: 'doughnut',
+        data: {
+            labels: chartData.departments,
+            datasets: [{
+                data: chartData.department_counts,
+                backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#ec4899'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // 2. Grade Distribution Chart (Bar)
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.grades,
+            datasets: [{
+                label: 'Students Count',
+                data: chartData.grade_counts,
+                backgroundColor: '#10b981',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // 3. Subject Averages Chart (Horizontal Bar)
+    new Chart(document.getElementById('subjectChart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.subjects,
+            datasets: [{
+                label: 'Average Score',
+                data: chartData.subject_averages,
+                backgroundColor: '#06b6d4',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { max: 100, beginAtZero: true } }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

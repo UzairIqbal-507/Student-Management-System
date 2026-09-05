@@ -9,7 +9,9 @@ from database import (
     db_update_student,
     db_delete_student,
     db_authenticate_user,
-    db_register_user
+    db_register_user,
+    db_log_action,
+    db_get_audit_logs
 )
 from utils import (
     get_academic_summary,
@@ -60,6 +62,7 @@ def login():
                 "role": user["role"],
                 "student_id": user.get("student_id")
             }
+            db_log_action(user["username"], "User Login", "Logged into system")
             flash(f"Welcome back, {user['username']}! 👋", "success")
             return redirect(url_for("index"))
         else:
@@ -78,6 +81,7 @@ def register():
 
         success, msg = db_register_user(username, email, password, role, student_id)
         if success:
+            db_log_action("System", "User Register", f"Registered {username} ({role})")
             flash("Account registered successfully! Please log in. ✅", "success")
             return redirect(url_for("login"))
         else:
@@ -87,6 +91,8 @@ def register():
 
 @app.route("/logout")
 def logout():
+    if "user" in session:
+        db_log_action(session["user"]["username"], "User Logout", "Logged out")
     session.pop("user", None)
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
@@ -104,7 +110,24 @@ def index():
 
     return render_template("index.html", students=students, current_user=session.get("user"))
 
-# 2. ADD STUDENT (ADMIN ONLY)
+# 2. INDIVIDUAL STUDENT DASHBOARD / PROFILE
+@app.route("/student/<student_id>")
+@login_required
+def student_profile(student_id):
+    student = db_get_student_by_id(student_id)
+    if not student:
+        flash("Student not found! ❌", "danger")
+        return redirect(url_for("index"))
+
+    current_user = session.get("user", {})
+    if current_user.get("role") == "student" and current_user.get("student_id") != student_id:
+        flash("Access denied! You can only view your own profile.", "danger")
+        return redirect(url_for("index"))
+
+    report = get_student_performance_report(student)
+    return render_template("student_profile.html", student=student, report=report)
+
+# 3. ADD STUDENT (ADMIN ONLY)
 @app.route("/add", methods=["GET", "POST"])
 @admin_required
 def add_student():
@@ -149,12 +172,13 @@ def add_student():
         }
 
         db_add_student(new_student)
+        db_log_action(session["user"]["username"], "Add Student", f"Added student ID {student_id}")
         flash("Student added successfully! ✅", "success")
         return redirect(url_for("index"))
 
     return render_template("add.html")
 
-# 3. UPDATE STUDENT (ADMIN ONLY)
+# 4. UPDATE STUDENT (ADMIN ONLY)
 @app.route("/update/<student_id>", methods=["GET", "POST"])
 @admin_required
 def update_student(student_id):
@@ -194,12 +218,13 @@ def update_student(student_id):
         target_student["grade"] = grade
 
         db_update_student(target_student)
+        db_log_action(session["user"]["username"], "Update Student", f"Updated student ID {student_id}")
         flash("Student updated successfully! ✅", "success")
         return redirect(url_for("index"))
 
     return render_template("update.html", student=target_student)
 
-# 4. DELETE STUDENT (ADMIN ONLY)
+# 5. DELETE STUDENT (ADMIN ONLY)
 @app.route("/delete/<student_id>")
 @admin_required
 def delete_student(student_id):
@@ -208,11 +233,12 @@ def delete_student(student_id):
         flash("Student not found! ❌", "danger")
     else:
         db_delete_student(student_id)
+        db_log_action(session["user"]["username"], "Delete Student", f"Deleted student ID {student_id}")
         flash("Student deleted successfully! 🗑️", "warning")
 
     return redirect(url_for("index"))
 
-# 5. SEARCH
+# 6. SEARCH
 @app.route("/search")
 @login_required
 def search():
@@ -239,7 +265,7 @@ def search():
 
     return render_template("search.html", students=filtered, query=query, search_by=search_by)
 
-# 6. DASHBOARD
+# 7. DASHBOARD
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -269,7 +295,7 @@ def dashboard():
 
     return render_template("dashboard.html", summary=summary, chart_data=chart_data)
 
-# 7. EXPORT PDF REPORT
+# 8. EXPORT PDF REPORT
 @app.route("/pdf/<student_id>")
 @login_required
 def generate_pdf(student_id):
@@ -286,7 +312,7 @@ def generate_pdf(student_id):
     latest_file = max(files, key=os.path.getctime)
     return send_file(latest_file, as_attachment=True)
 
-# 8. EXPORT TO EXCEL (NEW)
+# 9. EXPORT TO EXCEL
 @app.route("/export/excel")
 @admin_required
 def export_excel():
@@ -296,9 +322,10 @@ def export_excel():
         return redirect(url_for("index"))
 
     filepath = export_students_to_excel(students)
+    db_log_action(session["user"]["username"], "Export Data", "Exported student records to Excel")
     return send_file(filepath, as_attachment=True, download_name="Students_List.xlsx")
 
-# 9. BULK IMPORT FROM EXCEL/CSV (NEW)
+# 10. BULK IMPORT FROM EXCEL/CSV
 @app.route("/import/excel", methods=["POST"])
 @admin_required
 def import_excel():
@@ -330,8 +357,16 @@ def import_excel():
         except Exception:
             pass
 
+    db_log_action(session["user"]["username"], "Bulk Import", f"Imported {success_count} students via file upload")
     flash(f"Successfully imported {success_count} students! 🎉", "success")
     return redirect(url_for("index"))
+
+# 11. AUDIT LOGS VIEW (ADMIN ONLY)
+@app.route("/logs")
+@admin_required
+def view_logs():
+    logs = db_get_audit_logs(limit=50)
+    return render_template("logs.html", logs=logs)
 
 if __name__ == "__main__":
     app.run(debug=True)

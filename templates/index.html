@@ -74,6 +74,10 @@
                         </span>
                     </td>
                     <td class="text-end">
+                        <!-- Individual Student Dashboard Link -->
+                        <a href="{{ url_for('student_profile', student_id=student.student_id) }}" class="btn btn-sm btn-outline-info rounded-2 me-1" title="View Student Dashboard">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
                         <a href="{{ url_for('generate_pdf', student_id=student.student_id) }}" class="btn btn-sm btn-outline-primary rounded-2 me-1" title="Download PDF Report">
                             <i class="fa-solid fa-file-pdf"></i>
                         </a>

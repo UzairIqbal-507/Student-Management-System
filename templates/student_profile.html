@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ student.name }} - Individual Dashboard{% endblock %}
+
+{% block content %}
+<!-- Back & Actions Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-id-card text-primary me-2"></i>Student Performance Dashboard</h2>
+        <p class="text-muted m-0">Detailed academic profile and subject evaluation for {{ student.name }}.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('generate_pdf', student_id=student.student_id) }}" class="btn btn-outline-primary rounded-3">
+            <i class="fa-solid fa-file-pdf me-1"></i> Download PDF Report
+        </a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-light rounded-3">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back
+        </a>
+    </div>
+</div>
+
+<!-- Profile Overview Card -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+            <div class="avatar-circle bg-primary bg-opacity-20 text-primary fw-bold display-4 rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                {{ student.name[0] | upper }}
+            </div>
+            <h4 class="fw-bold m-0">{{ student.name }}</h4>
+            <div class="text-muted mb-2">{{ student.student_id }}</div>
+            <span class="badge bg-secondary bg-opacity-20 text-light border border-secondary border-opacity-20 px-3 py-2 rounded-2 mb-3">
+                {{ student.department }}
+            </span>
+            <div class="d-flex gap-2 w-100 justify-content-center">
+                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-20 px-3 py-2 rounded-2">
+                    Semester {{ student.semester }}
+                </span>
+                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-20 px-3 py-2 rounded-2">
+                    Grade {{ student.grade }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Metrics Cards -->
+    <div class="col-md-8">
+        <div class="row g-3 h-100">
+            <div class="col-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                    <div class="text-muted small mb-1"><i class="fa-solid fa-graduation-cap text-primary me-2"></i>Cumulative GPA</div>
+                    <h2 class="fw-bold text-info m-0">{{ student.CGPA }} <small class="fs-6 text-muted">/ 4.00</small></h2>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                    <div class="text-muted small mb-1"><i class="fa-solid fa-percent text-success me-2"></i>Percentage</div>
+                    <h2 class="fw-bold text-success m-0">{{ "%.2f"|format(student.percentage) if student.percentage else 'N/A' }}%</h2>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                    <div class="text-muted small mb-1"><i class="fa-solid fa-calculator text-warning me-2"></i>Total Marks</div>
+                    <h3 class="fw-bold text-warning m-0">{{ student.total_marks }} / {{ student.maximum_marks }}</h3>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
+                    <div class="text-muted small mb-1"><i class="fa-solid fa-envelope text-danger me-2"></i>Contact Details</div>
+                    <div class="fw-semibold small text-truncate">{{ student.email }}</div>
+                    <div class="text-muted small">{{ student.phone }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Subject Breakdown Table -->
+<div class="glass-card p-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-book-open text-info me-2"></i>Subject Wise Performance</h5>
+    <div class="table-responsive">
+        <table class="table table-custom align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Marks Obtained</th>
+                    <th>Total Marks</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if student.marks %}
+                    {% for subject, score in student.marks.items() %}
+                    <tr>
+                        <td class="fw-semibold">{{ subject }}</td>
+                        <td class="fw-bold">{{ score }}</td>
+                        <td class="text-muted">100</td>
+                        <td>
+                            {% if score >= 50 %}
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-20">Passed</span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-20">Needs Improvement</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">No subject marks recorded for this student.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

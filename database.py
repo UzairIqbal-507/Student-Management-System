@@ -6,22 +6,20 @@ import json
 DB_CONFIG = {
     "dbname": "student_db",
     "user": "postgres",
-    "password": "Uz@ir507",  # Ensure PostgreSQL credentials match
+    "password": "Uz@ir507",
     "host": "localhost",
     "port": "5432"
 }
 
-
 def get_db_connection():
     return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
-
 
 def init_db():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 1. Create Students Table
+        # 1. Students Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS students (
                 student_id VARCHAR(50) PRIMARY KEY,
@@ -39,7 +37,7 @@ def init_db():
             );
         ''')
 
-        # 2. Create Users Table (With Foreign Key)
+        # 2. Users Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -50,9 +48,21 @@ def init_db():
                 student_id VARCHAR(50) REFERENCES students(student_id) ON DELETE CASCADE
             );
         ''')
+
+        # 3. Audit Logs Table (NEW)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) NOT NULL,
+                action VARCHAR(100) NOT NULL,
+                details TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+
         conn.commit()
 
-        # Create Default Admin User if not exists
+        # Default Admin User
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin';")
         if cursor.fetchone()["count"] == 0:
             admin_pass = generate_password_hash("admin123")
@@ -61,15 +71,41 @@ def init_db():
                 VALUES (%s, %s, %s, %s);
             ''', ("admin", "admin@school.com", admin_pass, "admin"))
             conn.commit()
-            print("Default admin created (Username: admin, Password: admin123) ✅")
 
         cursor.close()
         conn.close()
     except Exception as e:
         print(f"Database Init Error: {e}")
 
+# AUDIT LOG HELPER
+def db_log_action(username, action, details=""):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO audit_logs (username, action, details)
+            VALUES (%s, %s, %s);
+        ''', (username, action, details))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Logging Error: {e}")
 
-# USER AUTHENTICATION HELPERS
+def db_get_audit_logs(limit=50):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT %s;", (limit,))
+        logs = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return [dict(log) for log in logs]
+    except Exception as e:
+        print(f"Fetch Logs Error: {e}")
+        return []
+
+# AUTH FUNCTIONS
 def db_register_user(username, email, password, role="student", student_id=None):
     try:
         conn = get_db_connection()
@@ -86,7 +122,6 @@ def db_register_user(username, email, password, role="student", student_id=None)
     except Exception as e:
         return False, str(e)
 
-
 def db_authenticate_user(username_or_email, password):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -95,7 +130,6 @@ def db_authenticate_user(username_or_email, password):
             SELECT * FROM users WHERE username = %s OR email = %s;
         ''', (username_or_email, username_or_email))
         user = cursor.fetchone()
-
         if user and check_password_hash(user["password_hash"], password):
             return dict(user)
         return None
@@ -103,8 +137,7 @@ def db_authenticate_user(username_or_email, password):
         cursor.close()
         conn.close()
 
-
-# STUDENT FUNCTIONS
+# STUDENT CRUD FUNCTIONS
 def db_get_all_students():
     try:
         conn = get_db_connection()
@@ -121,8 +154,7 @@ def db_get_all_students():
             s_dict["CGPA"] = float(raw_cgpa) if raw_cgpa is not None else 0.0
             s_dict["percentage"] = float(s_dict["percentage"]) if s_dict.get("percentage") is not None else None
             s_dict["total_marks"] = float(s_dict["total_marks"]) if s_dict.get("total_marks") is not None else None
-            s_dict["maximum_marks"] = float(s_dict["maximum_marks"]) if s_dict.get(
-                "maximum_marks") is not None else None
+            s_dict["maximum_marks"] = float(s_dict["maximum_marks"]) if s_dict.get("maximum_marks") is not None else None
 
             marks_data = s_dict.pop("marks_json")
             if isinstance(marks_data, str):
@@ -135,7 +167,6 @@ def db_get_all_students():
     except Exception as e:
         print(f"Fetch Error: {e}")
         return []
-
 
 def db_get_student_by_id(student_id):
     try:
@@ -152,8 +183,7 @@ def db_get_student_by_id(student_id):
             s_dict["CGPA"] = float(raw_cgpa) if raw_cgpa is not None else 0.0
             s_dict["percentage"] = float(s_dict["percentage"]) if s_dict.get("percentage") is not None else None
             s_dict["total_marks"] = float(s_dict["total_marks"]) if s_dict.get("total_marks") is not None else None
-            s_dict["maximum_marks"] = float(s_dict["maximum_marks"]) if s_dict.get(
-                "maximum_marks") is not None else None
+            s_dict["maximum_marks"] = float(s_dict["maximum_marks"]) if s_dict.get("maximum_marks") is not None else None
 
             marks_data = s_dict.pop("marks_json")
             if isinstance(marks_data, str):
@@ -166,7 +196,6 @@ def db_get_student_by_id(student_id):
     except Exception as e:
         print(f"Fetch Single Error: {e}")
         return None
-
 
 def db_add_student(student):
     conn = get_db_connection()
@@ -193,7 +222,6 @@ def db_add_student(student):
     cursor.close()
     conn.close()
 
-
 def db_update_student(student):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -219,7 +247,6 @@ def db_update_student(student):
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def db_delete_student(student_id):
     conn = get_db_connection()
