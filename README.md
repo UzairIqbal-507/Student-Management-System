@@ -1,52 +1,59 @@
-# 🎓 EduPulse Pro — Student Management System
+# 🎓 EduPulse Pro — Advanced Student Management System
 
-A high-performance, commercial-grade Student Management Web Application built with Python (Flask), PostgreSQL, and a modern Glassmorphism Dark UI/UX.
+**EduPulse Pro** is a enterprise-grade, web-based Student Management & Academic Analytics System built with **Flask (Python)**, **PostgreSQL**, and **Bootstrap 5**. It features Role-Based Access Control (RBAC), dynamic academic department/subject management, automated PDF report generation, email notifications, bulk data processing, and real-time analytical dashboards.
 
 ---
 
-## 🚀 Key Features
+## 🔥 Key Features
 
-- 🔐 **Authentication & RBAC**: Secure role-based user login (Admin vs. Student) with hashed passwords using `werkzeug.security`.
-- 🗄️ **PostgreSQL Backend**: Relational database storage with native `JSONB` support for dynamic marks, relational tables, and CASCADE rules.
-- 📚 **Dynamic Departmental Subjects**: Tailored subject fields based on department (Data Science, Computer Science, SE, IT).
-- 📊 **Visual Analytics Dashboard**: Interactive visual insights powered by `Chart.js` (Department Distribution, Grade Ranges, Subject Averages).
-- 📥 **Bulk Import & Export**: One-click Excel (.xlsx) / CSV directory export and bulk student onboarding via file upload (`pandas` + `openpyxl`).
-- 📄 **PDF Report Generation**: Institutional PDF performance reports generated on the fly (`ReportLab`).
-- 📜 **Audit Trail & System Logs**: Complete tracking of critical operations (Add, Edit, Delete, Bulk Upload) with timestamps.
-- 🎨 **Glassmorphic UI/UX**: Dark mode layout with instant client-side search, SweetAlert2 popups, and active button loading states.
+### 🔐 1. Multi-Role Authentication & Access Control (RBAC)
+* **Admin Portal**: Full access to student records, dynamic subject setup, bulk operations, analytical dashboards, and system audit logs.
+* **Student Portal**: Restricted self-service portal where students can only view their own marks, performance summary, and download/email their marksheets.
+* **Security & Encryption**: Password hashing using `Werkzeug` security standards and protected session routing.
+
+### 🏢 2. Dynamic Department & Subject Management
+* **Custom Departments**: Admins can dynamically create and manage departments (e.g., Data Science, AI, Cyber Security).
+* **Subject Mapping**: Assign customized course structures to specific departments.
+* **Dynamic Forms**: Student registration forms dynamically render subject input fields based on the chosen department.
+
+### 📊 3. Interactive Analytics & Performance Metrics
+* **Visual Charts**: Integrated **Chart.js** visualizations for department breakdown, grade distributions, and subject performance averages.
+* **Real-Time Search & Sorting**: Instant client-side filtering and natural numeric Student ID sorting (`STU-1`, `STU-2`, ... `STU-10`).
+* **Automated Calculations**: Dynamic GPA, total marks, percentage, and letter grade evaluations (`A+` to `F`).
+
+### 📧 4. Automated Reporting & PDF Mailer
+* **PDF Marksheet Generation**: Instant PDF report card generation using `ReportLab`.
+* **Automated Email Notifications**: One-click emailing of official PDF report cards directly to student email addresses via SMTP.
+
+### 📁 5. Data Science & Bulk Operations
+* **Excel/CSV Bulk Import**: Upload multi-student datasets directly into PostgreSQL with automated validation and error handling.
+* **Excel Data Export**: Export student records and marks breakdown to structured `.xlsx` files with a single click.
+
+### 🛡️ 6. System Audit Logs & Account Settings
+* **Activity Tracking**: Tracks user logins, record additions, updates, deletions, and data exports.
+* **User Profile & Security**: In-app password change mechanism with current password verification.
 
 ---
 
 ## 🛠️ Tech Stack & Dependencies
 
-- **Backend**: Python, Flask
-- **Database**: PostgreSQL (`psycopg2`)
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+), Bootstrap 5.3, FontAwesome 6, Chart.js, SweetAlert2
-- **Data & File Processing**: Pandas, OpenPyXL, ReportLab, Werkzeug
+* **Backend Framework:** Python 3.12+ / Flask
+* **Database Management:** PostgreSQL (via `psycopg2-binary`)
+* **Frontend UI:** HTML5, Bootstrap 5.3 (Dark Glassmorphism Theme), FontAwesome 6, Chart.js
+* **Reporting & Mailer:** ReportLab (PDF), Python SMTP (`smtplib`, `email`)
+* **Data Processing:** Pandas, OpenPyXL
+* **Security:** Werkzeug Password Hashing
 
 ---
 
-## 📂 Project Architecture
+## 🚀 Installation & Setup Guide
 
-```text
-Student Management System/
-│
-├── app.py                   # Main Flask routes & middleware
-├── database.py              # PostgreSQL queries & schema initialization
-├── utils.py                 # PDF generation, Analytics summary, Excel import/export
-├── validation.py            # Input validation & grading calculations
-├── migrate.py               # JSON to PostgreSQL migration utility
-├── requirements.txt         # Project dependencies
-├── README.md                # Project documentation
-│
-├── static/                  # Static assets & custom styling
-├── templates/               # HTML Templates
-│   ├── layout.html          # Base Glassmorphism layout
-│   ├── index.html           # Main student directory & instant filter
-│   ├── dashboard.html       # Chart.js analytics view
-│   ├── add.html             # Dynamic student creation form
-│   ├── update.html          # Student details editor
-│   ├── login.html           # Login page
-│   ├── register.html        # Registration page
-│   └── logs.html            # Audit trail log view
-└── reports/                 # Output directory for generated PDF & Excel files
+### 1. Prerequisites
+Ensure you have the following installed on your machine:
+* Python 3.10 or higher
+* PostgreSQL Database Server
+
+### 2. Clone the Repository
+```bash
+git clone [https://github.com/your-username/student-management-system.git](https://github.com/your-username/student-management-system.git)
+cd student-management-system
