@@ -74,15 +74,20 @@
                         </span>
                     </td>
                     <td class="text-end">
-                        <!-- Individual Student Dashboard Link -->
+                        <!-- View Student Dashboard -->
                         <a href="{{ url_for('student_profile', student_id=student.student_id) }}" class="btn btn-sm btn-outline-info rounded-2 me-1" title="View Student Dashboard">
                             <i class="fa-solid fa-eye"></i>
                         </a>
+                        <!-- PDF Download -->
                         <a href="{{ url_for('generate_pdf', student_id=student.student_id) }}" class="btn btn-sm btn-outline-primary rounded-2 me-1" title="Download PDF Report">
                             <i class="fa-solid fa-file-pdf"></i>
                         </a>
+                        <!-- Send PDF via Email -->
+                        <a href="{{ url_for('generate_pdf', student_id=student.student_id, send_email='true') }}" class="btn btn-sm btn-outline-warning rounded-2 me-1" title="Email Report to Student">
+                            <i class="fa-solid fa-envelope"></i>
+                        </a>
                         {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('update_student', student_id=student.student_id) }}" class="btn btn-sm btn-outline-warning rounded-2 me-1" title="Edit Student">
+                            <a href="{{ url_for('update_student', student_id=student.student_id) }}" class="btn btn-sm btn-outline-secondary rounded-2 me-1" title="Edit Student">
                                 <i class="fa-solid fa-pen"></i>
                             </a>
                             <button onclick="confirmDelete('{{ url_for('delete_student', student_id=student.student_id) }}')" class="btn btn-sm btn-outline-danger rounded-2" title="Delete Student">
@@ -128,7 +133,6 @@
 
 {% block extra_js %}
 <script>
-    // Fast Client-Side Realtime Filtering
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const query = this.value.toLowerCase();
         const rows = document.querySelectorAll('#studentsTable tbody tr');

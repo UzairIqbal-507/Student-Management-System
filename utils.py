@@ -1,428 +1,205 @@
-import json
 import os
-import csv
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import pandas as pd
-import json
-from datetime import datetime
-from openpyxl import Workbook
 
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+# EMAIL CONFIGURATION (Set your SMTP details here or via environment variables)
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SENDER_EMAIL = "iqbaluzair507@gmail.com"  # Replace with sender email
+SENDER_PASSWORD = "lncc mied cfdk jcsv"          # Replace with Gmail App Password
 
-#LOAD STUDENTS FROM FILE
-#============================
-def load_students():
+def send_result_email(student_email, student_name, student_id, pdf_path):
+    """Sends an automated email notification with attached PDF report."""
+    if SENDER_EMAIL == "your-school-email@gmail.com":
+        print("[Email Alert] SMTP Credentials not configured. Skipping email send.")
+        return False, "SMTP Credentials not set up in utils.py"
+
     try:
-        with open('students.json') as json_file:
-            return json.load(json_file)
+        msg = MIMEMultipart()
+        msg['From'] = f"EduPulse Pro <{SENDER_EMAIL}>"
+        msg['To'] = student_email
+        msg['Subject'] = f"Academic Performance Report - {student_name} ({student_id})"
 
-    except FileNotFoundError:
-        return []
+        body_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px;">
+            <div style="max-width: 600px; margin: auto; background-color: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h2 style="color: #6366f1;">EduPulse Pro Academic Notification</h2>
+                <p>Dear <strong>{student_name}</strong>,</p>
+                <p>Your latest academic performance record and mark sheet have been updated on the student portal.</p>
+                <p>Please find your official performance PDF report attached to this email.</p>
+                <hr style="border-color: rgba(255,255,255,0.1);">
+                <p style="font-size: 12px; color: #94a3b8;">This is an automated system notification. Please do not reply directly to this email.</p>
+            </div>
+        </body>
+        </html>
+        """
+        msg.attach(MIMEText(body_html, 'html'))
 
-#SAVE STUDENTS DATA INTO FILE
-#=========================
-def save_students(students):
+        # Attach PDF Report
+        if os.path.exists(pdf_path):
+            with open(pdf_path, 'rb') as f:
+                attach = MIMEApplication(f.read(), _subtype="pdf")
+                attach.add_header('Content-Disposition', 'attachment', filename=os.path.basename(pdf_path))
+                msg.attach(attach)
 
-    if os.path.exists('students.json'):
-        backup_students()
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True, "Email sent successfully!"
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False, str(e)
 
-    with open('students.json', 'w') as json_file:
-        json.dump(students, json_file, indent=4)
 
-
-
-# BACKUP STUDENTS DATA
-# =========================
-def backup_students():
-    try:
-        with open('students.json') as source:
-            students = json.load(source)
-
-        os.makedirs('backups', exist_ok=True)
-
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-        backup_file = f"backups/students_backup_{timestamp}.json"
-
-        with open(backup_file, 'w') as backup:
-            json.dump(students, backup, indent=4)
-
-        print(f"\nStudent data backup created: {backup_file} ✅")
-
-    except FileNotFoundError:
-        print("\nNo student data available for backup. ❌")
-
-# GET AVAILABLE BACKUPS
-# =========================
-def get_backups():
-    if not os.path.exists("backups"):
-        return []
-
-    backups = []
-
-    for file in os.listdir("backups"):
-        if file.startswith("students_backup_") and file.endswith(".json"):
-            backups.append(file)
-
-    return sorted(backups)
-
-# RESTORE STUDENTS DATA
-# =========================
-def restore_students(backup_file):
-    try:
-        backup_path = os.path.join("backups", backup_file)
-        if os.path.exists("students.json"):
-            backup_students()
-        with open(backup_path) as backup:
-            students = json.load(backup)
-
-        if not isinstance(students, list):
-            print("\nInvalid backup data. ❌")
-            return
-
-        with open("students.json", "w") as json_file:
-            json.dump(students, json_file, indent=4)
-
-        print("\nStudent data restored successfully. ✅")
-
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("\nUnable to restore this backup. ❌")
-
-# EXPORT STUDENTS TO CSV
-# =========================
-def export_students_csv(students):
-    if not students:
-        print("\nNo Students Available to Export. ❌")
-        return
-
-    os.makedirs("reports", exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_path = f"reports/student_report_{timestamp}.csv"
-
-    fields = [
-        "student_id",
-        "name",
-        "email",
-        "phone",
-        "department",
-        "semester",
-        "CGPA",
-        "total_marks",
-        "maximum_marks",
-        "percentage",
-        "grade"
-    ]
-
-    with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(
-            csv_file,
-            fieldnames=fields,
-            extrasaction="ignore"
-        )
-
-        writer.writeheader()
-
-        for student in students:
-            writer.writerow(student)
-
-    print(f"\nStudent report exported successfully: {file_path} ✅")
-
-# EXPORT STUDENTS TO EXCEL
-# =========================
-def export_students_excel(students):
-    if not students:
-        print("\nNo Students Available to Export. ❌")
-        return
-
-    os.makedirs("reports", exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_path = f"reports/student_report_{timestamp}.xlsx"
-
-    fields = [
-        "student_id",
-        "name",
-        "email",
-        "phone",
-        "department",
-        "semester",
-        "CGPA",
-        "total_marks",
-        "maximum_marks",
-        "percentage",
-        "grade"
-    ]
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Students"
-
-    sheet.append(fields)
-
-    for student in students:
-        row = []
-
-        for field in fields:
-            row.append(student.get(field, ""))
-
-        sheet.append(row)
-
-    workbook.save(file_path)
-
-    print(f"\nStudent Excel report exported successfully: {file_path} ✅")
-
-# ACADEMIC SUMMARY
-# =========================
 def get_academic_summary(students):
+    if not students:
+        return {
+            "total_students": 0,
+            "average_cgpa": 0.0,
+            "department_counts": {},
+            "grade_counts": {},
+            "subject_averages": {}
+        }
 
     total_students = len(students)
+    total_cgpa = sum(s.get("CGPA", 0.0) for s in students)
+    avg_cgpa = round(total_cgpa / total_students, 2)
 
-    # Safe float CGPA handling (defaults to 0.0 if CGPA is None)
-    total_cgpa = sum(
-        float(student.get("CGPA") or 0.0) for student in students
-    )
-
-    average_cgpa = (
-        total_cgpa / total_students
-        if total_students
-        else 0
-    )
-
-    highest_cgpa = (
-        max(students, key=lambda student: float(student.get("CGPA") or 0.0))
-        if students
-        else None
-    )
-
-    lowest_cgpa = (
-        min(students, key=lambda student: float(student.get("CGPA") or 0.0))
-        if students
-        else None
-    )
-
-    department_counts = {}
-    department_cgpa = {}
-
-    semester_counts = {}
-    semester_cgpa = {}
-
-    students_with_results = []
-
-    # STUDENT STATISTICS
-    for student in students:
-        cgpa_val = float(student.get("CGPA") or 0.0)
-
-        # Department statistics
-        department = student.get("department", "Unknown")
-
-        department_counts[department] = (
-            department_counts.get(department, 0) + 1
-        )
-
-        department_cgpa[department] = (
-            department_cgpa.get(department, 0.0) + cgpa_val
-        )
-
-        # Semester statistics
-        semester = student.get("semester", 1)
-
-        semester_counts[semester] = (
-            semester_counts.get(semester, 0) + 1
-        )
-
-        semester_cgpa[semester] = (
-            semester_cgpa.get(semester, 0.0) + cgpa_val
-        )
-
-        # Result availability
-        if student.get("percentage") is not None and student.get("grade") is not None:
-            students_with_results.append(student)
-
-    students_without_results = (
-        total_students - len(students_with_results)
-    )
-
-    # AVERAGE PERCENTAGE
-    if students_with_results:
-        average_percentage = (
-            sum(
-                float(student["percentage"])
-                for student in students_with_results
-            )
-            / len(students_with_results)
-        )
-    else:
-        average_percentage = None
-
-    # GRADE COUNTS
+    dept_counts = {}
     grade_counts = {}
-    for student in students_with_results:
-        grade = student.get("grade", "N/A")
-        grade_counts[grade] = (
-            grade_counts.get(grade, 0) + 1
-        )
-
-    # SUBJECT ANALYTICS
-    subject_marks = {}
+    subject_totals = {}
     subject_counts = {}
 
-    for student in students:
-        for subject, marks in student.get("marks", {}).items():
-            if marks is not None:
-                subject_marks[subject] = (
-                    subject_marks.get(subject, 0.0) + float(marks)
-                )
-                subject_counts[subject] = (
-                    subject_counts.get(subject, 0) + 1
-                )
+    for s in students:
+        dept = s.get("department", "Unknown")
+        dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
-    subject_averages = {}
-    for subject in subject_marks:
-        if subject_counts[subject] > 0:
-            subject_averages[subject] = (
-                subject_marks[subject] / subject_counts[subject]
-            )
+        grade = s.get("grade", "N/A")
+        grade_counts[grade] = grade_counts.get(grade, 0) + 1
 
-    # BEST AND WEAKEST SUBJECT
-    highest_subject = None
-    lowest_subject = None
+        marks = s.get("marks", {})
+        if isinstance(marks, dict):
+            for sub, score in marks.items():
+                subject_totals[sub] = subject_totals.get(sub, 0.0) + float(score)
+                subject_counts[sub] = subject_counts.get(sub, 0) + 1
 
-    if subject_averages:
-        highest_subject = max(
-            subject_averages,
-            key=subject_averages.get
-        )
-        lowest_subject = min(
-            subject_averages,
-            key=subject_averages.get
-        )
-
-    # STUDENT RANKING
-    student_ranking = sorted(
-        students_with_results,
-        key=lambda student: float(student.get("percentage") or 0.0),
-        reverse=True
-    )
+    subj_averages = {sub: round(subject_totals[sub] / subject_counts[sub], 2) for sub in subject_totals}
 
     return {
         "total_students": total_students,
-        "total_cgpa": total_cgpa,
-        "average_cgpa": average_cgpa,
-        "highest_cgpa": highest_cgpa,
-        "lowest_cgpa": lowest_cgpa,
-        "department_counts": department_counts,
-        "department_cgpa": department_cgpa,
-        "semester_counts": semester_counts,
-        "semester_cgpa": semester_cgpa,
-        "subject_marks": subject_marks,
-        "subject_counts": subject_counts,
-        "subject_averages": subject_averages,
-        "highest_subject": highest_subject,
-        "lowest_subject": lowest_subject,
-        "students_with_results": students_with_results,
-        "student_ranking": student_ranking,
-        "students_without_results": students_without_results,
-        "average_percentage": average_percentage,
-        "grade_counts": grade_counts
+        "average_cgpa": avg_cgpa,
+        "department_counts": dept_counts,
+        "grade_counts": grade_counts,
+        "subject_averages": subj_averages
     }
 
 
-# STUDENT PERFORMANCE REPORT
-# =========================
-
 def get_student_performance_report(student):
-
-    percentage = student.get("percentage")
-
-    if percentage is None:
-        performance_level = "Result Not Available"
-        status = "Result Not Available"
-
-    elif percentage >= 85:
-        performance_level = "Excellent"
-        status = "Passed"
-
-    elif percentage >= 70:
-        performance_level = "Good"
-        status = "Passed"
-
-    elif percentage >= 50:
-        performance_level = "Satisfactory"
-        status = "Passed"
-
-    else:
-        performance_level = "Needs Improvement"
-        status = "Failed"
-
+    marks = student.get("marks", {})
     return {
-    "student_id": student["student_id"],
-    "name": student["name"],
-    "department": student["department"],
-    "semester": student["semester"],
-    "CGPA": student["CGPA"],
-    "marks": student.get("marks", {}),
-    "total_marks": student.get("total_marks"),
-    "maximum_marks": student.get("maximum_marks"),
-    "percentage": percentage,
-    "grade": student.get("grade"),
-    "status": status,
-    "performance_level": performance_level
-}
+        "student_id": student.get("student_id"),
+        "name": student.get("name"),
+        "department": student.get("department"),
+        "semester": student.get("semester"),
+        "cgpa": student.get("CGPA"),
+        "total_marks": student.get("total_marks"),
+        "maximum_marks": student.get("maximum_marks"),
+        "percentage": student.get("percentage"),
+        "grade": student.get("grade"),
+        "marks": marks
+    }
 
-# EXPORT STUDENT PERFORMANCE REPORT TO PDF
-# =========================================
+
 def export_student_performance_pdf(report):
-    try:
-        os.makedirs("reports", exist_ok=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file_path = f"reports/{report['student_id']}_performance_report_{timestamp}.pdf"
+    reports_dir = "reports"
+    if not os.path.exists(reports_dir):
+        os.makedirs(reports_dir)
 
-        document = SimpleDocTemplate(file_path, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
+    filepath = os.path.join(reports_dir, f"{report['student_id']}_report.pdf")
+    doc = SimpleDocTemplate(filepath, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
 
-        elements.append(Paragraph("Student Performance Report", styles["Title"]))
-        elements.append(Spacer(1, 15))
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, leading=24, textColor=colors.HexColor('#1e293b'), alignment=1)
+    subtitle_style = ParagraphStyle('SubTitle', parent=styles['Normal'], fontSize=10, leading=12, textColor=colors.HexColor('#64748b'), alignment=1)
+    heading_style = ParagraphStyle('Heading', parent=styles['Heading2'], fontSize=12, leading=16, textColor=colors.HexColor('#0f172a'))
+    normal_style = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor('#334155'))
 
-        elements.append(Paragraph(f"<b>Student ID:</b> {report['student_id']}", styles["Normal"]))
-        elements.append(Paragraph(f"<b>Name:</b> {report['name']}", styles["Normal"]))
-        elements.append(Paragraph(f"<b>Department:</b> {report['department']}", styles["Normal"]))
-        elements.append(Paragraph(f"<b>Semester:</b> {report['semester']}", styles["Normal"]))
-        elements.append(Paragraph(f"<b>CGPA:</b> {report['CGPA']}", styles["Normal"]))
+    elements = []
+    elements.append(Paragraph("<b>EDUPULSE PRO ACADEMIC REPORT</b>", title_style))
+    elements.append(Paragraph("Institutional Student Performance Evaluation", subtitle_style))
+    elements.append(Spacer(1, 15))
 
-        elements.append(Spacer(1, 15))
-        elements.append(Paragraph("Academic Result", styles["Heading2"]))
+    info_data = [
+        [Paragraph(f"<b>Student Name:</b> {report['name']}", normal_style), Paragraph(f"<b>Student ID:</b> {report['student_id']}", normal_style)],
+        [Paragraph(f"<b>Department:</b> {report['department']}", normal_style), Paragraph(f"<b>Semester:</b> {report['semester']}", normal_style)],
+        [Paragraph(f"<b>Cumulative GPA:</b> {report['cgpa']:.2f}", normal_style), Paragraph(f"<b>Overall Grade:</b> {report['grade']}", normal_style)]
+    ]
+    info_table = Table(info_data, colWidths=[270, 270])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('PADDING', (0,0), (-1,-1), 8),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#e2e8f0')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 15))
 
-        if report["marks"]:
-            for subject, marks in report["marks"].items():
-                elements.append(Paragraph(f"{subject}: {marks}", styles["Normal"]))
+    elements.append(Paragraph("<b>Subject Wise Breakdown</b>", heading_style))
+    elements.append(Spacer(1, 8))
 
-            elements.append(Spacer(1, 10))
-            elements.append(Paragraph(f"<b>Total Marks:</b> {report['total_marks']}/{report['maximum_marks']}", styles["Normal"]))
-            elements.append(Paragraph(f"<b>Percentage:</b> {report['percentage']:.2f}%", styles["Normal"]))
-            elements.append(Paragraph(f"<b>Grade:</b> {report['grade']}", styles["Normal"]))
-            elements.append(Paragraph(f"<b>Status:</b> {report['status']}", styles["Normal"]))
-            elements.append(Paragraph(f"<b>Performance Level:</b> {report['performance_level']}", styles["Normal"]))
-        else:
-            elements.append(Paragraph("Academic Result: Not Available", styles["Normal"]))
+    marks_data = [["Subject", "Marks Obtained", "Total Marks", "Status"]]
+    for sub, score in report.get("marks", {}).items():
+        status = "Passed" if float(score) >= 50 else "Needs Improvement"
+        marks_data.append([sub, str(score), "100", status])
 
-        document.build(elements)
-        print(f"\nStudent performance PDF exported successfully: {file_path} ✅")
+    marks_table = Table(marks_data, colWidths=[180, 120, 120, 120])
+    marks_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#6366f1')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('PADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+    ]))
+    elements.append(marks_table)
+    elements.append(Spacer(1, 15))
 
-    except Exception as e:
-        print(f"\nError generating PDF: {e} ❌")
+    pct_str = f"{report['percentage']:.2f}%" if report.get("percentage") else "N/A"
+    summary_data = [
+        ["Total Marks Obtained", f"{report['total_marks']} / {report['maximum_marks']}"],
+        ["Overall Percentage", pct_str]
+    ]
+    summary_table = Table(summary_data, colWidths=[270, 270])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f1f5f9')),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('PADDING', (0,0), (-1,-1), 6),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+    ]))
+    elements.append(summary_table)
+
+    doc.build(elements)
+    return filepath
 
 
-#export to excel
-#=========================
-def export_students_to_excel(students, filepath="reports/students_data.xlsx"):
-    if not students:
-        return None
+def export_students_to_excel(students):
+    reports_dir = "reports"
+    if not os.path.exists(reports_dir):
+        os.makedirs(reports_dir)
 
-    # Data formatting for Excel
+    filepath = os.path.join(reports_dir, "Students_Export.xlsx")
     export_data = []
+
     for s in students:
         row = {
             "Student ID": s.get("student_id"),
@@ -432,49 +209,57 @@ def export_students_to_excel(students, filepath="reports/students_data.xlsx"):
             "Department": s.get("department"),
             "Semester": s.get("semester"),
             "CGPA": s.get("CGPA"),
+            "Total Marks": s.get("total_marks"),
             "Percentage": s.get("percentage"),
-            "Grade": s.get("grade"),
-            "Marks JSON": json.dumps(s.get("marks", {}))
+            "Grade": s.get("grade")
         }
+        for sub, val in s.get("marks", {}).items():
+            row[f"Marks_{sub}"] = val
+
         export_data.append(row)
 
     df = pd.DataFrame(export_data)
     df.to_excel(filepath, index=False)
     return filepath
 
-#import to excel
-#==============================
-def import_students_from_excel(file_stream):
-    # Reads uploaded Excel/CSV file into a DataFrame
+
+def import_students_from_excel(file_storage):
     try:
-        if file_stream.filename.endswith('.csv'):
-            df = pd.read_csv(file_stream)
+        filename = file_storage.filename
+        if filename.endswith('.csv'):
+            df = pd.read_csv(file_storage)
         else:
-            df = pd.read_excel(file_stream)
+            df = pd.read_excel(file_storage)
 
-        imported_students = []
+        imported = []
         for _, row in df.iterrows():
-            marks_raw = row.get("Marks JSON", "{}")
-            if isinstance(marks_raw, str):
-                try:
-                    marks = json.loads(marks_raw)
-                except:
-                    marks = {}
-            else:
-                marks = {}
+            student_id = str(row.get("Student ID", "")).strip()
+            name = str(row.get("Name", "")).strip()
+            email = str(row.get("Email", "")).strip()
+            phone = str(row.get("Phone", "")).strip()
+            department = str(row.get("Department", "")).strip()
+            semester = int(row.get("Semester", 1))
+            cgpa = float(row.get("CGPA", 0.0))
 
-            student = {
-                "student_id": str(row["Student ID"]),
-                "name": str(row["Name"]),
-                "email": str(row["Email"]),
-                "phone": str(row["Phone"]),
-                "department": str(row["Department"]),
-                "semester": int(row["Semester"]),
-                "CGPA": float(row["CGPA"]),
-                "marks": marks
-            }
-            imported_students.append(student)
+            marks = {}
+            for col in df.columns:
+                if col.startswith("Marks_"):
+                    sub_name = col.replace("Marks_", "")
+                    val = row.get(col, 0)
+                    marks[sub_name] = float(val) if pd.notnull(val) else 0.0
 
-        return imported_students, None
+            if student_id and name and email:
+                imported.append({
+                    "student_id": student_id,
+                    "name": name,
+                    "email": email,
+                    "phone": phone,
+                    "department": department,
+                    "semester": semester,
+                    "CGPA": cgpa,
+                    "marks": marks
+                })
+
+        return imported, None
     except Exception as e:
         return [], str(e)

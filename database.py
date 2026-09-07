@@ -6,7 +6,7 @@ import json
 DB_CONFIG = {
     "dbname": "student_db",
     "user": "postgres",
-    "password": "Uz@ir507",  # Confirm your PostgreSQL password
+    "password": "Uz@ir507",  # Verify your password
     "host": "localhost",
     "port": "5432"
 }
@@ -19,7 +19,25 @@ def init_db():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 1. Students Table
+        # 1. Departments Table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS departments (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) UNIQUE NOT NULL
+            );
+        ''')
+
+        # 2. Subjects Table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS subjects (
+                id SERIAL PRIMARY KEY,
+                department_name VARCHAR(100) REFERENCES departments(name) ON DELETE CASCADE,
+                subject_name VARCHAR(100) NOT NULL,
+                UNIQUE(department_name, subject_name)
+            );
+        ''')
+
+        # 3. Students Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS students (
                 student_id VARCHAR(50) PRIMARY KEY,
@@ -37,7 +55,7 @@ def init_db():
             );
         ''')
 
-        # 2. Users Table
+        # 4. Users Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -49,7 +67,7 @@ def init_db():
             );
         ''')
 
-        # 3. Audit Logs Table
+        # 5. Audit Logs Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS audit_logs (
                 id SERIAL PRIMARY KEY,
@@ -62,7 +80,23 @@ def init_db():
 
         conn.commit()
 
-        # Default Admin User
+        # Seed Default Departments & Subjects if empty
+        cursor.execute("SELECT COUNT(*) FROM departments;")
+        if cursor.fetchone()["count"] == 0:
+            default_depts = ["Computer Science", "Data Science", "Software Engineering", "Information Technology"]
+            default_subjects = {
+                "Computer Science": ["Programming Fundamentals", "Data Structures", "Algorithms", "Operating Systems"],
+                "Data Science": ["Python Programming", "Statistics & Probability", "Machine Learning", "Data Mining"],
+                "Software Engineering": ["Software Architecture", "Agile Methodologies", "Software Testing", "DBMS"],
+                "Information Technology": ["Computer Networks", "Cyber Security", "Cloud Computing", "Web Technologies"]
+            }
+            for dept in default_depts:
+                cursor.execute("INSERT INTO departments (name) VALUES (%s) ON CONFLICT DO NOTHING;", (dept,))
+                for sub in default_subjects.get(dept, []):
+                    cursor.execute("INSERT INTO subjects (department_name, subject_name) VALUES (%s, %s) ON CONFLICT DO NOTHING;", (dept, sub))
+            conn.commit()
+
+        # Default Admin Account
         cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin';")
         if cursor.fetchone()["count"] == 0:
             admin_pass = generate_password_hash("admin123")
@@ -76,6 +110,91 @@ def init_db():
         conn.close()
     except Exception as e:
         print(f"Database Init Error: {e}")
+
+# DYNAMIC DEPARTMENTS & SUBJECTS FUNCTIONS
+def db_get_all_departments():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM departments ORDER BY name ASC;")
+        depts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return [d["name"] for d in depts]
+    except Exception as e:
+        print(f"Fetch Depts Error: {e}")
+        return []
+
+def db_get_department_subjects():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM subjects ORDER BY department_name, subject_name;")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        dept_sub_map = {}
+        for r in rows:
+            dept = r["department_name"]
+            sub = r["subject_name"]
+            if dept not in dept_sub_map:
+                dept_sub_map[dept] = []
+            dept_sub_map[dept].append(sub)
+        return dept_sub_map
+    except Exception as e:
+        print(f"Fetch Dept Subjects Error: {e}")
+        return {}
+
+def db_add_department(dept_name):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO departments (name) VALUES (%s);", (dept_name,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True, "Department added successfully!"
+    except Exception as e:
+        return False, str(e)
+
+def db_add_subject(dept_name, subject_name):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO subjects (department_name, subject_name) VALUES (%s, %s);", (dept_name, subject_name))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True, "Subject added successfully!"
+    except Exception as e:
+        return False, str(e)
+
+def db_delete_department(dept_name):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM departments WHERE name = %s;", (dept_name,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Delete Dept Error: {e}")
+        return False
+
+def db_delete_subject(dept_name, subject_name):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM subjects WHERE department_name = %s AND subject_name = %s;", (dept_name, subject_name))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Delete Subject Error: {e}")
+        return False
 
 # AUDIT LOG HELPER
 def db_log_action(username, action, details=""):
@@ -137,7 +256,6 @@ def db_authenticate_user(username_or_email, password):
         cursor.close()
         conn.close()
 
-# CHANGE PASSWORD HELPER
 def db_change_password(username, old_password, new_password):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -162,7 +280,11 @@ def db_get_all_students():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM students ORDER BY name ASC;")
+        # raw string r""" ... """ used here to eliminate Python SyntaxWarning
+        cursor.execute(r"""
+            SELECT * FROM students 
+            ORDER BY NULLIF(regexp_replace(student_id, '\D', '', 'g'), '')::INT ASC, student_id ASC;
+        """)
         rows = cursor.fetchall()
         cursor.close()
         conn.close()

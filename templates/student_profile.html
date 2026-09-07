@@ -1,21 +1,27 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ student.name }} - Individual Dashboard{% endblock %}
+{% block title %}{{ student.name if student else 'Portal' }} - Student Portal{% endblock %}
 
 {% block content %}
-<!-- Back & Actions Header -->
+{% if student %}
+<!-- Portal Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold m-0"><i class="fa-solid fa-id-card text-primary me-2"></i>Student Performance Dashboard</h2>
-        <p class="text-muted m-0">Detailed academic profile and subject evaluation for {{ student.name }}.</p>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-graduation-cap text-primary me-2"></i>Student Performance Dashboard</h2>
+        <p class="text-muted m-0">Academic evaluation and report card for {{ student.name }}.</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="{{ url_for('generate_pdf', student_id=student.student_id, send_email='true') }}" class="btn btn-outline-warning rounded-3">
+            <i class="fa-solid fa-envelope me-1"></i> Email Report Card
+        </a>
         <a href="{{ url_for('generate_pdf', student_id=student.student_id) }}" class="btn btn-outline-primary rounded-3">
             <i class="fa-solid fa-file-pdf me-1"></i> Download PDF Report
         </a>
-        <a href="{{ url_for('index') }}" class="btn btn-outline-light rounded-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Back
-        </a>
+        {% if session.get('user', {}).get('role') == 'admin' %}
+            <a href="{{ url_for('index') }}" class="btn btn-outline-light rounded-3">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back
+            </a>
+        {% endif %}
     </div>
 </div>
 
@@ -65,7 +71,7 @@
             </div>
             <div class="col-6">
                 <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center">
-                    <div class="text-muted small mb-1"><i class="fa-solid fa-envelope text-danger me-2"></i>Contact Details</div>
+                    <div class="text-muted small mb-1"><i class="fa-solid fa-envelope text-danger me-2"></i>Registered Contact</div>
                     <div class="fw-semibold small text-truncate">{{ student.email }}</div>
                     <div class="text-muted small">{{ student.phone }}</div>
                 </div>
@@ -112,4 +118,11 @@
         </table>
     </div>
 </div>
+{% else %}
+<div class="glass-card p-5 text-center text-muted">
+    <i class="fa-solid fa-user-slash fs-1 mb-3"></i>
+    <h4>No Linked Student Record Found</h4>
+    <p>Your user account is not linked to any student profile. Please contact the administrator.</p>
+</div>
+{% endif %}
 {% endblock %}

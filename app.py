@@ -12,14 +12,21 @@ from database import (
     db_register_user,
     db_log_action,
     db_get_audit_logs,
-    db_change_password
+    db_change_password,
+    db_get_all_departments,
+    db_get_department_subjects,
+    db_add_department,
+    db_add_subject,
+    db_delete_department,
+    db_delete_subject
 )
 from utils import (
     get_academic_summary,
     get_student_performance_report,
     export_student_performance_pdf,
     export_students_to_excel,
-    import_students_from_excel
+    import_students_from_excel,
+    send_result_email
 )
 from validation import calculate_result
 
@@ -119,6 +126,66 @@ def logout():
     return redirect(url_for("login"))
 
 
+# DEPARTMENT & SUBJECT MANAGEMENT (ADMIN ONLY)
+@app.route("/manage/departments")
+@admin_required
+def manage_departments():
+    departments = db_get_all_departments()
+    dept_subjects = db_get_department_subjects()
+    return render_template("departments.html", departments=departments, dept_subjects=dept_subjects)
+
+
+@app.route("/add_department", methods=["POST"])
+@admin_required
+def add_department():
+    dept_name = request.form.get("department_name", "").strip()
+    if dept_name:
+        success, msg = db_add_department(dept_name)
+        if success:
+            db_log_action(session["user"]["username"], "Add Department", f"Added department {dept_name}")
+            flash(f"Department '{dept_name}' added successfully! ✅", "success")
+        else:
+            flash(f"Failed to add department: {msg} ❌", "danger")
+    return redirect(url_for("manage_departments"))
+
+
+@app.route("/add_subject", methods=["POST"])
+@admin_required
+def add_subject():
+    dept_name = request.form.get("department_name", "").strip()
+    subject_name = request.form.get("subject_name", "").strip()
+    if dept_name and subject_name:
+        success, msg = db_add_subject(dept_name, subject_name)
+        if success:
+            db_log_action(session["user"]["username"], "Add Subject", f"Added subject '{subject_name}' to {dept_name}")
+            flash(f"Subject '{subject_name}' added to {dept_name}! ✅", "success")
+        else:
+            flash(f"Failed to add subject: {msg} ❌", "danger")
+    return redirect(url_for("manage_departments"))
+
+
+@app.route("/delete_department/<dept_name>")
+@admin_required
+def delete_department(dept_name):
+    if db_delete_department(dept_name):
+        db_log_action(session["user"]["username"], "Delete Department", f"Deleted department {dept_name}")
+        flash(f"Department '{dept_name}' deleted! 🗑️", "warning")
+    else:
+        flash("Failed to delete department.", "danger")
+    return redirect(url_for("manage_departments"))
+
+
+@app.route("/delete_subject/<dept_name>/<subject_name>")
+@admin_required
+def delete_subject(dept_name, subject_name):
+    if db_delete_subject(dept_name, subject_name):
+        db_log_action(session["user"]["username"], "Delete Subject", f"Deleted {subject_name} from {dept_name}")
+        flash(f"Subject '{subject_name}' removed! 🗑️", "warning")
+    else:
+        flash("Failed to delete subject.", "danger")
+    return redirect(url_for("manage_departments"))
+
+
 # PROFILE / SETTINGS (CHANGE PASSWORD)
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
@@ -199,10 +266,13 @@ def student_profile(student_id):
     return render_template("student_profile.html", student=student, report=report)
 
 
-# 4. ADD STUDENT (ADMIN ONLY)
+# 4. ADD STUDENT (ADMIN ONLY) - DYNAMIC SUBJECTS SUPPORT
 @app.route("/add", methods=["GET", "POST"])
 @admin_required
 def add_student():
+    departments = db_get_all_departments()
+    dept_subjects = db_get_department_subjects()
+
     if request.method == "POST":
         students = db_get_all_students()
         student_id = request.form.get("student_id").strip()
@@ -218,13 +288,6 @@ def add_student():
                 subject_name = key[6:-1]
                 val = request.form.get(key, 0)
                 marks[subject_name] = float(val) if val else 0.0
-
-        if not marks:
-            default_subjects = ["Python", "DBMS", "Statistics", "Mathematics", "Calculus", "DLD"]
-            for sub in default_subjects:
-                val = request.form.get(sub.lower(), 0)
-                if val:
-                    marks[sub] = float(val)
 
         total_marks, maximum_marks, percentage, grade = calculate_result(marks)
 
@@ -248,7 +311,7 @@ def add_student():
         flash("Student added successfully! ✅", "success")
         return redirect(url_for("index"))
 
-    return render_template("add.html")
+    return render_template("add.html", departments=departments, dept_subjects=dept_subjects)
 
 
 # 5. UPDATE STUDENT (ADMIN ONLY)
@@ -260,6 +323,9 @@ def update_student(student_id):
     if not target_student:
         flash("Student not found! ❌", "danger")
         return redirect(url_for("index"))
+
+    departments = db_get_all_departments()
+    dept_subjects = db_get_department_subjects()
 
     if request.method == "POST":
         target_student["name"] = request.form.get("name").strip()
@@ -276,13 +342,6 @@ def update_student(student_id):
                 val = request.form.get(key, 0)
                 marks[subject_name] = float(val) if val else 0.0
 
-        if not marks:
-            default_subjects = ["Python", "DBMS", "Statistics", "Mathematics", "Calculus", "DLD"]
-            for sub in default_subjects:
-                val = request.form.get(sub.lower(), 0)
-                if val:
-                    marks[sub] = float(val)
-
         total_marks, maximum_marks, percentage, grade = calculate_result(marks)
         target_student["marks"] = marks
         target_student["total_marks"] = total_marks
@@ -295,7 +354,7 @@ def update_student(student_id):
         flash("Student updated successfully! ✅", "success")
         return redirect(url_for("index"))
 
-    return render_template("update.html", student=target_student)
+    return render_template("update.html", student=target_student, departments=departments, dept_subjects=dept_subjects)
 
 
 # 6. DELETE STUDENT (ADMIN ONLY)
@@ -372,7 +431,7 @@ def dashboard():
     return render_template("dashboard.html", summary=summary, chart_data=chart_data)
 
 
-# 9. EXPORT PDF REPORT
+# 9. EXPORT PDF REPORT & EMAIL NOTIFICATION
 @app.route("/pdf/<student_id>")
 @login_required
 def generate_pdf(student_id):
@@ -387,12 +446,16 @@ def generate_pdf(student_id):
         return redirect(url_for("index"))
 
     report = get_student_performance_report(student)
-    export_student_performance_pdf(report)
+    pdf_path = export_student_performance_pdf(report)
 
-    reports_dir = "reports"
-    files = [os.path.join(reports_dir, f) for f in os.listdir(reports_dir) if f.startswith(student_id)]
-    latest_file = max(files, key=os.path.getctime)
-    return send_file(latest_file, as_attachment=True)
+    if request.args.get("send_email") == "true":
+        sent, msg = send_result_email(student["email"], student["name"], student["student_id"], pdf_path)
+        if sent:
+            flash(f"Report Card emailed to {student['email']}! 📧", "success")
+        else:
+            flash(f"Failed to email report: {msg}", "warning")
+
+    return send_file(pdf_path, as_attachment=True)
 
 
 # 10. EXPORT TO EXCEL (ADMIN ONLY)
