@@ -6,7 +6,7 @@ import json
 DB_CONFIG = {
     "dbname": "student_db",
     "user": "postgres",
-    "password": "Uz@ir507",
+    "password": "Uz@ir507",  # Confirm your PostgreSQL password
     "host": "localhost",
     "port": "5432"
 }
@@ -49,7 +49,7 @@ def init_db():
             );
         ''')
 
-        # 3. Audit Logs Table (NEW)
+        # 3. Audit Logs Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS audit_logs (
                 id SERIAL PRIMARY KEY,
@@ -133,6 +133,26 @@ def db_authenticate_user(username_or_email, password):
         if user and check_password_hash(user["password_hash"], password):
             return dict(user)
         return None
+    finally:
+        cursor.close()
+        conn.close()
+
+# CHANGE PASSWORD HELPER
+def db_change_password(username, old_password, new_password):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT password_hash FROM users WHERE username = %s;", (username,))
+        user = cursor.fetchone()
+        if not user or not check_password_hash(user["password_hash"], old_password):
+            return False, "Current password is incorrect! ❌"
+
+        new_hashed = generate_password_hash(new_password)
+        cursor.execute("UPDATE users SET password_hash = %s WHERE username = %s;", (new_hashed, username))
+        conn.commit()
+        return True, "Password updated successfully! ✅"
+    except Exception as e:
+        return False, f"Password change failed: {str(e)}"
     finally:
         cursor.close()
         conn.close()

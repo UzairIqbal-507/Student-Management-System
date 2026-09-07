@@ -11,7 +11,8 @@ from database import (
     db_authenticate_user,
     db_register_user,
     db_log_action,
-    db_get_audit_logs
+    db_get_audit_logs,
+    db_change_password
 )
 from utils import (
     get_academic_summary,
@@ -25,8 +26,9 @@ from validation import calculate_result
 app = Flask(__name__)
 app.secret_key = "student_management_secret_key"
 
-# Initialize Database & Default Admin Account
+# Initialize DB
 init_db()
+
 
 # AUTHENTICATION DECORATORS
 def login_required(f):
@@ -36,7 +38,9 @@ def login_required(f):
             flash("Please log in first to access this page.", "warning")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 def admin_required(f):
     @wraps(f)
@@ -45,7 +49,9 @@ def admin_required(f):
             flash("Access denied! Admin permissions required.", "danger")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # AUTHENTICATION ROUTES
 @app.route("/login", methods=["GET", "POST"])
@@ -62,13 +68,18 @@ def login():
                 "role": user["role"],
                 "student_id": user.get("student_id")
             }
-            db_log_action(user["username"], "User Login", "Logged into system")
+            db_log_action(user["username"], "User Login", f"Logged in as {user['role']}")
             flash(f"Welcome back, {user['username']}! 👋", "success")
+
+            if user["role"] == "student" and user.get("student_id"):
+                return redirect(url_for("student_portal"))
+
             return redirect(url_for("index"))
         else:
             flash("Invalid username/email or password! ❌", "danger")
 
     return render_template("login.html")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -79,15 +90,25 @@ def register():
         role = request.form.get("role", "student")
         student_id = request.form.get("student_id", "").strip() or None
 
+        if role == "student":
+            if not student_id:
+                flash("Student ID is required for student registration! ❌", "danger")
+                return redirect(url_for("register"))
+            existing_student = db_get_student_by_id(student_id)
+            if not existing_student:
+                flash(f"No student record found with ID '{student_id}'. Contact Admin! ❌", "danger")
+                return redirect(url_for("register"))
+
         success, msg = db_register_user(username, email, password, role, student_id)
         if success:
             db_log_action("System", "User Register", f"Registered {username} ({role})")
             flash("Account registered successfully! Please log in. ✅", "success")
             return redirect(url_for("login"))
         else:
-            flash("Registration failed: Username or Email might exist! ❌", "danger")
+            flash("Registration failed: Username, Email or Student ID already linked! ❌", "danger")
 
     return render_template("register.html")
+
 
 @app.route("/logout")
 def logout():
@@ -97,20 +118,70 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
 
-# 1. HOME / VIEW ALL
+
+# PROFILE / SETTINGS (CHANGE PASSWORD)
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    if request.method == "POST":
+        old_password = request.form.get("old_password", "").strip()
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if new_password != confirm_password:
+            flash("New passwords do not match! ❌", "danger")
+            return redirect(url_for("settings"))
+
+        if len(new_password) < 6:
+            flash("Password must be at least 6 characters long! ❌", "warning")
+            return redirect(url_for("settings"))
+
+        username = session["user"]["username"]
+        success, msg = db_change_password(username, old_password, new_password)
+        if success:
+            db_log_action(username, "Password Change", "Successfully changed password")
+            flash(msg, "success")
+            return redirect(url_for("settings"))
+        else:
+            flash(msg, "danger")
+
+    return render_template("settings.html", current_user=session.get("user"))
+
+
+# 1. ADMIN DIRECTORY INDEX
 @app.route("/")
 @login_required
 def index():
     user_role = session["user"]["role"]
-    if user_role == "student" and session["user"].get("student_id"):
-        student = db_get_student_by_id(session["user"]["student_id"])
-        students = [student] if student else []
-    else:
-        students = db_get_all_students()
+    if user_role == "student":
+        return redirect(url_for("student_portal"))
 
+    students = db_get_all_students()
     return render_template("index.html", students=students, current_user=session.get("user"))
 
-# 2. INDIVIDUAL STUDENT DASHBOARD / PROFILE
+
+# 2. DEDICATED STUDENT PORTAL DASHBOARD
+@app.route("/portal")
+@login_required
+def student_portal():
+    current_user = session.get("user", {})
+
+    if current_user.get("role") != "student" or not current_user.get("student_id"):
+        flash("Admin/Staff should access main directory.", "info")
+        return redirect(url_for("index"))
+
+    student_id = current_user.get("student_id")
+    student = db_get_student_by_id(student_id)
+
+    if not student:
+        flash("Student record not found! Contact Admin.", "danger")
+        return render_template("student_profile.html", student=None, report=None)
+
+    report = get_student_performance_report(student)
+    return render_template("student_profile.html", student=student, report=report)
+
+
+# 3. INDIVIDUAL STUDENT VIEW
 @app.route("/student/<student_id>")
 @login_required
 def student_profile(student_id):
@@ -121,13 +192,14 @@ def student_profile(student_id):
 
     current_user = session.get("user", {})
     if current_user.get("role") == "student" and current_user.get("student_id") != student_id:
-        flash("Access denied! You can only view your own profile.", "danger")
-        return redirect(url_for("index"))
+        flash("Access Denied! You are only allowed to view your own portal. 🔒", "danger")
+        return redirect(url_for("student_portal"))
 
     report = get_student_performance_report(student)
     return render_template("student_profile.html", student=student, report=report)
 
-# 3. ADD STUDENT (ADMIN ONLY)
+
+# 4. ADD STUDENT (ADMIN ONLY)
 @app.route("/add", methods=["GET", "POST"])
 @admin_required
 def add_student():
@@ -178,7 +250,8 @@ def add_student():
 
     return render_template("add.html")
 
-# 4. UPDATE STUDENT (ADMIN ONLY)
+
+# 5. UPDATE STUDENT (ADMIN ONLY)
 @app.route("/update/<student_id>", methods=["GET", "POST"])
 @admin_required
 def update_student(student_id):
@@ -224,7 +297,8 @@ def update_student(student_id):
 
     return render_template("update.html", student=target_student)
 
-# 5. DELETE STUDENT (ADMIN ONLY)
+
+# 6. DELETE STUDENT (ADMIN ONLY)
 @app.route("/delete/<student_id>")
 @admin_required
 def delete_student(student_id):
@@ -238,9 +312,10 @@ def delete_student(student_id):
 
     return redirect(url_for("index"))
 
-# 6. SEARCH
+
+# 7. SEARCH (ADMIN ONLY)
 @app.route("/search")
-@login_required
+@admin_required
 def search():
     students = db_get_all_students()
     query = request.args.get("query", "").strip().lower()
@@ -257,17 +332,18 @@ def search():
                 filtered.append(s)
             elif search_by == "all":
                 if (query in s["student_id"].lower() or
-                    query in s["name"].lower() or
-                    query in s["department"].lower()):
+                        query in s["name"].lower() or
+                        query in s["department"].lower()):
                     filtered.append(s)
     else:
         filtered = students
 
     return render_template("search.html", students=filtered, query=query, search_by=search_by)
 
-# 7. DASHBOARD
+
+# 8. DASHBOARD ANALYTICS (ADMIN ONLY)
 @app.route("/dashboard")
-@login_required
+@admin_required
 def dashboard():
     students = db_get_all_students()
 
@@ -295,10 +371,16 @@ def dashboard():
 
     return render_template("dashboard.html", summary=summary, chart_data=chart_data)
 
-# 8. EXPORT PDF REPORT
+
+# 9. EXPORT PDF REPORT
 @app.route("/pdf/<student_id>")
 @login_required
 def generate_pdf(student_id):
+    current_user = session.get("user", {})
+    if current_user.get("role") == "student" and current_user.get("student_id") != student_id:
+        flash("Access Denied! ❌", "danger")
+        return redirect(url_for("student_portal"))
+
     student = db_get_student_by_id(student_id)
     if not student:
         flash("Student not found! ❌", "danger")
@@ -312,7 +394,8 @@ def generate_pdf(student_id):
     latest_file = max(files, key=os.path.getctime)
     return send_file(latest_file, as_attachment=True)
 
-# 9. EXPORT TO EXCEL
+
+# 10. EXPORT TO EXCEL (ADMIN ONLY)
 @app.route("/export/excel")
 @admin_required
 def export_excel():
@@ -325,7 +408,8 @@ def export_excel():
     db_log_action(session["user"]["username"], "Export Data", "Exported student records to Excel")
     return send_file(filepath, as_attachment=True, download_name="Students_List.xlsx")
 
-# 10. BULK IMPORT FROM EXCEL/CSV
+
+# 11. BULK IMPORT FROM EXCEL/CSV (ADMIN ONLY)
 @app.route("/import/excel", methods=["POST"])
 @admin_required
 def import_excel():
@@ -361,12 +445,14 @@ def import_excel():
     flash(f"Successfully imported {success_count} students! 🎉", "success")
     return redirect(url_for("index"))
 
-# 11. AUDIT LOGS VIEW (ADMIN ONLY)
+
+# 12. AUDIT LOGS VIEW (ADMIN ONLY)
 @app.route("/logs")
 @admin_required
 def view_logs():
     logs = db_get_audit_logs(limit=50)
     return render_template("logs.html", logs=logs)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

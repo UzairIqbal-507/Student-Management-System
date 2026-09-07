@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}Account Settings - EduPulse Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-gear text-primary me-2"></i>Account Settings</h2>
+        <p class="text-muted m-0">Manage your password and security credentials.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-light rounded-3">
+        <i class="fa-solid fa-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- User Account Summary -->
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <div class="avatar-circle bg-primary bg-opacity-20 text-primary fw-bold display-5 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                {{ session['user']['username'][0] | upper }}
+            </div>
+            <h4 class="fw-bold m-0">{{ session['user']['username'] }}</h4>
+            <p class="text-muted small mb-3">{{ session['user']['email'] }}</p>
+
+            <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-20 px-3 py-2 rounded-2">
+                Role: {{ session['user']['role'] | upper }}
+            </span>
+
+            {% if session['user'].get('student_id') %}
+                <div class="mt-3 text-muted small">
+                    <strong>Linked Student ID:</strong> {{ session['user']['student_id'] }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Password Change Form -->
+    <div class="col-md-8">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-key text-warning me-2"></i>Change Password</h5>
+            <form action="{{ url_for('settings') }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Current Password</label>
+                    <input type="password" name="old_password" class="form-control" required placeholder="Enter current password">
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">New Password</label>
+                        <input type="password" name="new_password" class="form-control" minlength="6" required placeholder="Minimum 6 characters">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" minlength="6" required placeholder="Re-type new password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-accent w-100 mt-2">
+                    <i class="fa-solid fa-shield-check me-1"></i> Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
