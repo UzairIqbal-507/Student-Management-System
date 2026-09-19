@@ -1,18 +1,33 @@
+import os
 import psycopg2
 from psycopg2.extras import RealDictCursor, Json
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
+from dotenv import load_dotenv
 
-DB_CONFIG = {
-    "dbname": "student_db",
-    "user": "postgres",
-    "password": "Uz@ir507",  # Verify your password
-    "host": "localhost",
-    "port": "5432"
-}
+# Local .env file se variables load karein (agar .env maujood ho)
+load_dotenv()
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+    if DATABASE_URL:
+        # Production / Online Database
+        return psycopg2.connect(
+            DATABASE_URL,
+            sslmode='require',
+            cursor_factory=RealDictCursor
+        )
+    else:
+        # Local Database (.env se secure values uthayega)
+        return psycopg2.connect(
+            dbname=os.environ.get("DB_NAME", "student_db"),
+            user=os.environ.get("DB_USER", "postgres"),
+            password=os.environ.get("DB_PASSWORD"),  # .env file se password uthayega
+            host=os.environ.get("DB_HOST", "localhost"),
+            port=os.environ.get("DB_PORT", "5432"),
+            cursor_factory=RealDictCursor
+        )
 
 def init_db():
     try:
@@ -280,7 +295,6 @@ def db_get_all_students():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # raw string r""" ... """ used here to eliminate Python SyntaxWarning
         cursor.execute(r"""
             SELECT * FROM students 
             ORDER BY NULLIF(regexp_replace(student_id, '\D', '', 'g'), '')::INT ASC, student_id ASC;

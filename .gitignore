@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 students.json
 students_backup.json
+.env
+myenv/
+venv/
